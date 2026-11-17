@@ -6,7 +6,7 @@ import { normalizeMx } from "@/lib/meta/client";
 import { publish } from "@/server/events/bus";
 import { getCredentialsByPhoneNumberId } from "@/server/whatsapp/credentials";
 import { ensureAssetAvailable } from "@/server/whatsapp/media";
-import type { Channel } from "@/lib/channels";
+import { isChannel, type Channel } from "@/lib/channels";
 import type {
   WebhookMediaPayload,
   WebhookMessage,
@@ -472,7 +472,9 @@ export async function ingestInboundMessage(input: {
   const conversation = await getOrCreateConversation(
     organizationId,
     contact.id,
-    { channel: contact.channel, threadRef: input.threadRef ?? null }
+    // Un contacto de `correo` (prospecto de Sol) jamás llega por aquí: la
+    // identidad entrante siempre es de un canal de mensajería.
+    { channel: isChannel(contact.channel) ? contact.channel : undefined, threadRef: input.threadRef ?? null }
   );
 
   // 016/018 — Si el mensaje viene de un anuncio, capturar su origen ANTES del
