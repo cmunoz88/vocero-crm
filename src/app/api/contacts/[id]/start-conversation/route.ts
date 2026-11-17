@@ -34,6 +34,10 @@ export const POST = withAuth(async (session, req: Request, ctx: Params) => {
   const { id } = await ctx.params;
   const contact = await getContactById(session.organizationId, id);
   if (!contact) return apiError(404, "not_found", "Contacto no encontrado");
+  // Prospecto que solo tiene correo: no hay a quién mandarle una plantilla.
+  if (contact.channel === "correo") {
+    return apiError(422, "no_identity", "Este contacto solo tiene correo: agrega su teléfono para escribirle por WhatsApp");
+  }
   if (!contact.phone && !contact.waIdentity) {
     return apiError(422, "no_identity", "Este contacto no tiene a dónde escribir");
   }

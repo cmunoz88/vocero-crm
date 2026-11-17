@@ -129,7 +129,7 @@ export const contact = pgTable(
      * 014: canal por el que vive este contacto. Aditivo y con default: toda
      * fila existente sigue significando exactamente lo mismo.
      */
-    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok"] })
+    channel: text("channel", { enum: ["whatsapp", "instagram", "messenger", "tiktok", "correo"] })
       .notNull()
       .default("whatsapp"),
     /**
