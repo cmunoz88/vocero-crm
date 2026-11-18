@@ -8,6 +8,10 @@ import { resetRateLimit } from "@/lib/rate-limit";
 // paralelo, el primero se pasaba de los 5 s de timeout.
 import { GET } from "@/app/api/bot/profile/route";
 
+// 067 — Sin base: el cerebro de cualquier tenant sale del entorno, como antes.
+vi.mock("@/server/brains/por-org", () => import("../fixtures/por-org-entorno"));
+
+
 const dbState = vi.hoisted(() => ({ queue: [] as unknown[][] }));
 
 vi.mock("@/lib/db", async (importOriginal) => {

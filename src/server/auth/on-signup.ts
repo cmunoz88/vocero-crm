@@ -42,19 +42,29 @@ export async function onUserCreated(userId: string, userName: string) {
       userId,
       role: "owner",
     });
-    await tx.insert(schema.pipelineStage).values(
-      SEED_STAGES.map((s, i) => ({
-        id: newId("stage"),
-        organizationId: orgId,
-        name: s.name,
-        position: i,
-        kind: s.kind,
-      }))
-    );
-    await tx.insert(schema.agentProfile).values({
-      id: newId("agentProfile"),
+    await sembrarOrganizacion(tx, orgId);
+  });
+}
+
+type Tx = Parameters<Parameters<ReturnType<typeof getDb>["transaction"]>[0]>[0];
+
+/**
+ * Lo que toda organización nueva trae: el pipeline sembrado y el perfil del
+ * agente. 067 — Lo comparten el primer registro y el alta de tenants.
+ */
+export async function sembrarOrganizacion(tx: Tx, orgId: string): Promise<void> {
+  await tx.insert(schema.pipelineStage).values(
+    SEED_STAGES.map((s, i) => ({
+      id: newId("stage"),
       organizationId: orgId,
-    });
+      name: s.name,
+      position: i,
+      kind: s.kind,
+    }))
+  );
+  await tx.insert(schema.agentProfile).values({
+    id: newId("agentProfile"),
+    organizationId: orgId,
   });
 }
 
@@ -65,17 +75,27 @@ export async function resolveActiveOrganizationId(
   return (await resolveMembership(userId))?.organizationId ?? null;
 }
 
-export async function resolveMembership(
-  userId: string
-): Promise<{ organizationId: string; role: string } | null> {
+export type Membership = {
+  organizationId: string;
+  role: string;
+  /** 067 — `suspended` deja la sesión sin organización usable. */
+  orgStatus: "active" | "suspended";
+  orgSlug: string | null;
+};
+
+export async function resolveMembership(userId: string): Promise<Membership | null> {
   const db = getDb();
   const rows = await db
     .select({
       organizationId: schema.member.organizationId,
       role: schema.member.role,
+      orgStatus: schema.organization.status,
+      orgSlug: schema.organization.slug,
     })
     .from(schema.member)
+    .innerJoin(schema.organization, eq(schema.member.organizationId, schema.organization.id))
     .where(eq(schema.member.userId, userId))
+    .orderBy(schema.member.createdAt)
     .limit(1);
   return rows[0] ?? null;
 }

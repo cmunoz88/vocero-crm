@@ -1,6 +1,6 @@
 import { after } from "next/server";
 import { guardarEvento, type FuenteWebhook } from "./eventos";
-import { resolverOrganizacion } from "./organizacion";
+import { resolverDestino } from "./organizacion";
 import { procesarFuente } from "./procesar";
 import { procesarEvento } from "./worker";
 
@@ -25,7 +25,13 @@ export async function recibirEvento(
   let organizationId: string | null;
   let evento: { id: string; nuevo: boolean };
   try {
-    organizationId = await resolverOrganizacion(fuente, payload);
+    const destino = await resolverDestino(fuente, payload);
+    // 067 — Negocio suspendido: 200 para que la fuente no reintente, y nada más.
+    if (destino.suspendida) {
+      console.warn(`[${etiqueta}] evento descartado: el negocio está suspendido`);
+      return Response.json({ received: true });
+    }
+    organizationId = destino.organizationId;
     if (!organizationId) {
       after(async () => {
         try {

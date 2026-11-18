@@ -14,7 +14,7 @@ import {
   type MensajeParaEvento,
   type ResultadoEntrega,
 } from "@/server/brains/contract";
-import { leerConfigDespacho } from "@/server/brains/config";
+import { configDespachoDeOrg } from "@/server/brains/por-org";
 import type { FilaDespacho } from "@/server/dispatch/outbox";
 import { isWindowOpen, windowExpiresAt } from "@/server/inbox/window";
 import { windowMsFor } from "@/server/channels/capabilities";
@@ -343,6 +343,12 @@ export const TIMEOUT_OLVIDO_MS = 8000;
  * Sin despacho configurado no hay a quién avisar: el agente incluido no guarda
  * nada aparte, su memoria ERAN los mensajes. Nunca lanza.
  */
+/** 067 — El cerebro del tenant del evento, o `null` si no tiene. */
+async function destinoDe(organizationId: string): Promise<{ url: string; secret: string } | null> {
+  const config = await configDespachoDeOrg(organizationId);
+  return config.active ? { url: config.url, secret: config.secret } : null;
+}
+
 export async function avisarOlvido(
   evento: EventoOlvido,
   opts: {
@@ -351,13 +357,10 @@ export async function avisarOlvido(
     fetchImpl?: typeof fetch;
   } = {}
 ): Promise<ResultadoOlvido> {
-  const config = leerConfigDespacho();
   const destino =
     opts.destino !== undefined
       ? opts.destino
-      : config.active
-        ? { url: config.url, secret: config.secret }
-        : null;
+      : await destinoDe(evento.organization.id);
   if (!destino) return "no_aplica";
 
   // Se serializa UNA vez y se firma ese string, igual que un despacho.

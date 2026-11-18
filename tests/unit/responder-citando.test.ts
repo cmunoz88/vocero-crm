@@ -60,6 +60,7 @@ vi.mock("@/server/inbox/lead-activity", () => ({
   onLeadActivity: vi.fn(async () => {}),
 }));
 vi.mock("@/server/brains/config", () => ({ despachoActivo: () => false }));
+vi.mock("@/server/brains/por-org", () => ({ despachoActivoDeOrg: async () => false }));
 vi.mock("@/server/dispatch/encolar", () => ({
   despacharAlCerebro: vi.fn(async () => {}),
 }));
@@ -131,6 +132,8 @@ import {
   citaDelWebhook,
   conCita,
 } from "@/server/inbox/quotes";
+
+
 
 const insertsDeMensajes = () =>
   h.inserts.filter((i) => i.table === schema.message).map((i) => i.values);

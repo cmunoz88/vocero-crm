@@ -29,6 +29,11 @@ export async function requireSession(): Promise<SessionContext> {
   if (!membership) {
     throw new UnauthorizedError("Sesión sin organización activa");
   }
+  // 067 — Un tenant suspendido no opera: ni app ni API, hasta que el
+  // superusuario lo reactive. La sesión sigue viva para poder decírselo.
+  if (membership.orgStatus !== "active") {
+    throw new UnauthorizedError("Organización suspendida");
+  }
   return {
     userId: session.user.id,
     organizationId: membership.organizationId,

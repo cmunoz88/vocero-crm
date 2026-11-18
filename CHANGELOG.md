@@ -9,6 +9,17 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
 ### Nuevo
 
+- **Multi-tenant con superusuario** (spec 067). Con `SUPERADMIN_EMAILS`, quien
+  esté en esa lista ve **Negocios** (`/admin`): crea negocios, cada uno con su
+  web ID (`/t/{slug}`, su propio login con su marca) y la cuenta de su dueño;
+  los suspende (no entran, no reciben WhatsApp, su cerebro no contesta), los
+  reactiva o los borra definitivamente (datos, archivos y cuentas). Cada
+  negocio puede tener su propio cerebro: URL de despacho y llave del bot
+  cifrada, y `/api/bot/*` reconoce al negocio por la llave. La organización
+  principal sigue usando `BRAIN_DISPATCH_URL`/`BOT_API_KEY` del entorno. Sin
+  la variable, todo queda como antes. Migración `0027` aditiva (aplica sola
+  al arrancar).
+
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la
   instancia, quien administra la cuenta autoriza su WhatsApp en la ventana

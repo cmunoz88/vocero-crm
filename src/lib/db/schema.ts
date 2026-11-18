@@ -82,6 +82,11 @@ export const organization = pgTable("organization", {
   logo: text("logo"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   metadata: text("metadata"),
+  /** 067 — Un tenant suspendido no entra, no ingiere WhatsApp ni despacha. */
+  status: text("status", { enum: ["active", "suspended"] })
+    .notNull()
+    .default("active"),
+  suspendedAt: timestamp("suspended_at"),
 });
 
 export const member = pgTable("member", {
@@ -1399,5 +1404,36 @@ export const conversationNote = pgTable(
   },
   (t) => [
     index("conversation_note_conv_idx").on(t.organizationId, t.conversationId, t.createdAt),
+  ]
+);
+
+/**
+ * 067 — El cerebro de CADA tenant: a dónde despacharle y con qué llave
+ * contesta por `/api/bot/*`. La llave va cifrada (el CRM firma con ella) y su
+ * SHA-256 sirve para identificar al tenant en cada llamada sin descifrar
+ * nada. Sin fila, la organización principal usa las variables de entorno
+ * (`BRAIN_DISPATCH_URL`, `BOT_API_KEY`) como antes.
+ */
+export const brainConnection = pgTable(
+  "brain_connection",
+  {
+    id: text("id").primaryKey(),
+    organizationId: text("organization_id")
+      .notNull()
+      .references(() => organization.id, { onDelete: "cascade" }),
+    dispatchUrl: text("dispatch_url"),
+    healthUrl: text("health_url"),
+    keyCipher: text("key_cipher"),
+    keyIv: text("key_iv"),
+    keyTag: text("key_tag"),
+    /** SHA-256 hex de la llave: búsqueda por llave en tiempo constante de índice. */
+    keyHash: text("key_hash"),
+    keyLast4: text("key_last4"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("brain_connection_org_uq").on(t.organizationId),
+    uniqueIndex("brain_connection_key_hash_uq").on(t.keyHash),
   ]
 );
