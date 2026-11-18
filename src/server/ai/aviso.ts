@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
@@ -25,7 +26,7 @@ export async function avisoIaDe(organizationId: string): Promise<AvisoIa> {
   const filas = await db
     .select({ enabled: schema.agentProfile.enabled })
     .from(schema.agentProfile)
-    .where(scoped(schema.agentProfile.organizationId, organizationId))
+    .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
     .limit(1);
   if (!filas[0]?.enabled) return null;
 

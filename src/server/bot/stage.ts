@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { asc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
@@ -117,7 +118,7 @@ export async function moverEtapaPorElCerebro(input: {
   const perfiles = await db
     .select({ tools: schema.agentProfile.tools })
     .from(schema.agentProfile)
-    .where(scoped(schema.agentProfile.organizationId, organizationId))
+    .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
     .limit(1);
   // Sin perfil, como sin configurar: todas encendidas.
   if (!herramientasEfectivas(perfiles[0]?.tools).includes("etapa")) {

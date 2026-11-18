@@ -43,6 +43,16 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   correo configurado, el superadministrador entrega el enlace de verificación.
   Migración `0029` aditiva.
 
+- **Varios números y agentes por negocio** (spec 068). Ajustes → *Números y
+  agentes*: agrega más números de WhatsApp (verificados contra Meta, token
+  cifrado), elige el principal, crea más agentes y decide si uno contesta
+  todos los números o cada número tiene el suyo. Cada conversación se
+  contesta desde el número al que escribió el cliente; el evento de despacho
+  trae `agent` cuando atiende un agente que no es el principal y
+  `GET /api/bot/profile?agentId=` devuelve su perfil. El agente principal
+  sigue siendo el interruptor de la IA de todo el negocio. Migración `0030`
+  aditiva (lo existente queda como principal). Guía: `docs/varios-numeros.md`.
+
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la
   instancia, quien administra la cuenta autoriza su WhatsApp en la ventana

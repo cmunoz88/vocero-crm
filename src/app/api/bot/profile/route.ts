@@ -1,4 +1,6 @@
+import { agenteDeConversacion, agentePorId, esAgentePrincipal } from "@/server/agents";
 import { asc, eq } from "drizzle-orm";
+import { scoped } from "@/lib/db/tenant";
 import { getDb, schema } from "@/lib/db";
 import { apiError } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
@@ -23,12 +25,22 @@ export async function GET(req: Request) {
   }
 
   const db = getDb();
-  const profiles = await db
-    .select()
-    .from(schema.agentProfile)
-    .where(eq(schema.agentProfile.organizationId, organizationId))
-    .limit(1);
-  const profile = profiles[0];
+  // 068 — `?agentId=` (el del evento) o `?conversationId=`: el perfil de ese
+  // agente, siempre del MISMO negocio. Sin ellos, el principal.
+  const url = new URL(req.url);
+  const agentId = url.searchParams.get("agentId");
+  const conversationId = url.searchParams.get("conversationId");
+  const profile = agentId
+    ? await agentePorId(organizationId, agentId)
+    : conversationId
+      ? await agenteDeConversacion(organizationId, conversationId)
+      : (
+          await db
+            .select()
+            .from(schema.agentProfile)
+            .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
+            .limit(1)
+        )[0];
   if (!profile) {
     // Condición esperada (instancia sin perfil): el bot cae a su brief local.
     return apiError(404, "no_profile", "La instancia no tiene perfil de agente");
@@ -42,7 +54,9 @@ export async function GET(req: Request) {
 
   // 036 — Con qué piensa el cerebro que no trae llave: el proxy del CRM.
   const ia = await resolveAiProvider(organizationId);
-  const llm: BotLlm = ia.ok && ia.provider.model ? { path: "/api/bot/llm", model: ia.provider.model } : null;
+  // 068 — El modelo del agente (de los autorizados) gana al de la plataforma.
+  const modelo = profile.model || (ia.ok ? ia.provider.model : null);
+  const llm: BotLlm = ia.ok && modelo ? { path: "/api/bot/llm", model: modelo } : null;
 
   return Response.json(serializeBotProfile(profile, kb, llm));
 }

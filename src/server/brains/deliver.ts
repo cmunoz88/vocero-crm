@@ -1,3 +1,4 @@
+import { agenteDeNumero } from "@/server/agents";
 import { and, desc, eq, inArray, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
@@ -243,7 +244,11 @@ export async function construirEvento(
     fila.messageIds ?? []
   );
 
+  // 068 — El agente del número (solo viaja si no es el principal).
+  const agente = await agenteDeNumero(fila.organizationId, conv.waPhoneNumberId);
+
   return armarEvento({
+    agent: agente && !agente.isDefault ? { id: agente.id, name: agente.name } : null,
     dispatchId: fila.id,
     organization: org,
     conversation: {

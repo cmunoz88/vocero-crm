@@ -1,4 +1,4 @@
-import { eq, inArray } from "drizzle-orm";
+import { and, eq, inArray } from "drizzle-orm";
 import type { getDb } from "@/lib/db";
 import { schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
@@ -265,7 +265,7 @@ export async function seedDemo(
       greeting: "¡Hola! Soy Martillito, el asistente de Ferretería El Martillo 🔨",
       updatedAt: new Date(),
     })
-    .where(eq(schema.agentProfile.organizationId, organizationId));
+    .where(and(eq(schema.agentProfile.organizationId, organizationId), eq(schema.agentProfile.isDefault, true)));
 
   // --- Corrida de Laboratorio de ejemplo (guardada, con el hueco encontrado) ---
   const runId = newId("testRun");

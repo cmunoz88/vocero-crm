@@ -40,6 +40,7 @@ vi.mock("@/server/whatsapp/credentials", async (importOriginal) => {
   return {
     ...original,
     getCredentialsByOrg: h.getCredentialsByOrg,
+    getCredentialsForNumber: (org: string) => h.getCredentialsByOrg(org),
     getCredentialsByPhoneNumberId: vi.fn(async () => ({
       organizationId: "org_1",
     })),

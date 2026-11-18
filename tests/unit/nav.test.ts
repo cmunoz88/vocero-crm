@@ -74,7 +74,7 @@ describe("ajustes en tres secciones", () => {
     const sections = settingsSections({});
     expect(sections.map((s) => s.title)).toEqual(["Canales", "Agente", "Negocio"]);
     expect(links(sections)).toEqual({
-      Canales: ["WhatsApp"],
+      Canales: ["WhatsApp", "Números y agentes"],
       Agente: ["IA"],
       Negocio: ["Marca", "Apariencia", "Plantillas", "Respuestas rápidas", "Equipo"],
     });
@@ -83,25 +83,26 @@ describe("ajustes en tres secciones", () => {
   it("cada bandera añade su enlace en su sección y en ninguna otra", () => {
     // 023: con un canal social, "Estado" abre la sección.
     expect(links(settingsSections({ messenger: true }))).toEqual({
-      Canales: ["Estado", "WhatsApp", "Messenger"],
+      Canales: ["Estado", "WhatsApp", "Números y agentes", "Messenger"],
       Agente: ["IA"],
       Negocio: ["Marca", "Apariencia", "Plantillas", "Respuestas rápidas", "Equipo"],
     });
     expect(links(settingsSections({ instagram: true })).Canales).toEqual([
       "Estado",
       "WhatsApp",
+      "Números y agentes",
       "Instagram",
     ]);
     expect(
       links(settingsSections({ instagram: true, messenger: true, tiktok: true })).Canales
-    ).toEqual(["Estado", "WhatsApp", "Instagram", "Messenger", "TikTok"]);
+    ).toEqual(["Estado", "WhatsApp", "Números y agentes", "Instagram", "Messenger", "TikTok"]);
     expect(links(settingsSections({ agenda: true }))).toEqual({
-      Canales: ["WhatsApp"],
+      Canales: ["WhatsApp", "Números y agentes"],
       Agente: ["IA", "Agenda"],
       Negocio: ["Marca", "Apariencia", "Plantillas", "Respuestas rápidas", "Equipo"],
     });
     expect(links(settingsSections({ atribucion: true }))).toEqual({
-      Canales: ["WhatsApp"],
+      Canales: ["WhatsApp", "Números y agentes"],
       Agente: ["IA"],
       Negocio: ["Marca", "Apariencia", "Plantillas", "Respuestas rápidas", "Equipo", "Anuncios"],
     });
@@ -122,6 +123,7 @@ describe("ajustes en tres secciones", () => {
       [
         "/settings/channels",
         "/settings/whatsapp",
+        "/settings/numbers",
         "/settings/instagram",
         "/settings/messenger",
         "/settings/tiktok",

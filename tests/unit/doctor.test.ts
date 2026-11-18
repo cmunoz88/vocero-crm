@@ -236,6 +236,9 @@ describe("checkWhatsApp", () => {
     verifiedName: "Ferretería",
     status: "connected",
     token,
+    label: null,
+    agentProfileId: null,
+    isPrimary: true,
   });
   const guardada = (token: string) => ({
     organization: "Ferretería El Martillo",

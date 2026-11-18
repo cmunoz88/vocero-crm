@@ -19,12 +19,12 @@
 - [x] T203 E2E (vencida, un solo uso, carrera, sin correo)
 
 ## Etapa 3 — Números y agentes
-- [ ] T301 Varios `meta_credentials` por negocio (+ `label`, `agent_id`)
-- [ ] T302 `conversation.wa_phone_number_id` + envío por el número de la conversación
-- [ ] T303 Varios `agent_profile` (+ `name`, `is_default`) y modo compartido/por número
-- [ ] T304 Despacho y `/api/bot/profile` con el agente de la conversación
-- [ ] T305 UI Ajustes → WhatsApp (lista) y Agentes (lista)
-- [ ] T306 E2E
+- [x] T301 Varios `meta_credentials` por negocio (+ `label`, `agent_id`)
+- [x] T302 `conversation.wa_phone_number_id` + envío por el número de la conversación
+- [x] T303 Varios `agent_profile` (+ `name`, `is_default`) y modo compartido/por número
+- [x] T304 Despacho y `/api/bot/profile` con el agente de la conversación
+- [x] T305 UI Ajustes → WhatsApp (lista) y Agentes (lista)
+- [x] T306 E2E `scripts/e2e-numeros.mjs` (50 checks) · guía `docs/varios-numeros.md`
 
 ## Etapa 4 — Panel global
 - [ ] T401 Estadísticas por negocio e integraciones

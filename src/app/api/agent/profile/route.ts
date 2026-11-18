@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
@@ -20,7 +21,7 @@ export const GET = withAuth(async (session) => {
   const rows = await db
     .select()
     .from(schema.agentProfile)
-    .where(scoped(schema.agentProfile.organizationId, session.organizationId))
+    .where(scoped(schema.agentProfile.organizationId, session.organizationId, esAgentePrincipal()))
     .limit(1);
   const p = rows[0];
   if (!p) return apiError(404, "not_found", "Perfil del agente no encontrado");
@@ -81,7 +82,7 @@ export const PUT = withAuth(async (session, req: Request) => {
       ...(tools ? { tools: herramientasEfectivas(tools) } : {}),
       updatedAt: new Date(),
     })
-    .where(scoped(schema.agentProfile.organizationId, session.organizationId))
+    .where(scoped(schema.agentProfile.organizationId, session.organizationId, esAgentePrincipal()))
     .returning();
   if (!updated[0]) return apiError(404, "not_found", "Perfil no encontrado");
   return Response.json({ ok: true });

@@ -5,7 +5,7 @@ import { graphRequest, MetaApiError, normalizeRecipient } from "@/lib/meta/clien
 import { destinatarioMeta, type Destinatario } from "@/lib/meta/destinatario";
 import { publish } from "@/server/events/bus";
 import {
-  getCredentialsByOrg,
+  getCredentialsForNumber,
   markReconnectRequired,
   type Credentials,
 } from "@/server/whatsapp/credentials";
@@ -309,7 +309,11 @@ async function prepareSend(
     );
   }
 
-  const credentials = await getCredentialsByOrg(organizationId);
+  // 068 — Se contesta desde el número al que escribió el cliente.
+  const credentials = await getCredentialsForNumber(
+    organizationId,
+    row.conversation.waPhoneNumberId
+  );
   if (!credentials) {
     throw new SendError("not_connected", "No hay número de WhatsApp conectado");
   }
@@ -764,7 +768,7 @@ export async function callGraphSend(
   } catch (err) {
     if (err instanceof MetaApiError) {
       if (err.isAuthError) {
-        await markReconnectRequired(credentials.organizationId);
+        await markReconnectRequired(credentials.organizationId, credentials.phoneNumberId);
         throw new SendError(
           "reconnect_required",
           "El token de WhatsApp expiró: reconecta el número en Configuración"

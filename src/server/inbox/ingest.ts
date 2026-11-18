@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { scoped } from "@/lib/db/tenant";
@@ -216,7 +216,7 @@ export async function getOrCreateContact(
 export async function getOrCreateConversation(
   organizationId: string,
   contactId: string,
-  opts?: { channel?: Channel; threadRef?: string | null }
+  opts?: { channel?: Channel; threadRef?: string | null; waPhoneNumberId?: string | null }
 ) {
   const db = getDb();
   const inserted = await db
@@ -227,6 +227,7 @@ export async function getOrCreateConversation(
       contactId,
       channel: opts?.channel ?? "whatsapp",
       channelThreadRef: opts?.threadRef ?? null,
+      waPhoneNumberId: opts?.waPhoneNumberId ?? null,
       // 027: hereda la pausa del contacto en el mismo INSERT. Si se leyera
       // antes, cada mensaje entrante pagaría una consulta más, y entre la
       // lectura y la inserción cabría el primer turno del agente.
@@ -243,7 +244,11 @@ export async function getOrCreateConversation(
       and(
         eq(schema.conversation.organizationId, organizationId),
         eq(schema.conversation.contactId, contactId),
-        eq(schema.conversation.isTest, false)
+        eq(schema.conversation.isTest, false),
+        // 068 — Misma llave que el índice único: contacto + número.
+        opts?.waPhoneNumberId
+          ? eq(schema.conversation.waPhoneNumberId, opts.waPhoneNumberId)
+          : isNull(schema.conversation.waPhoneNumberId)
       )
     )
     .limit(1);
@@ -318,6 +323,7 @@ export async function processMessagesValue(value: WebhookValue): Promise<void> {
       // 018: normalizado aquí, en el adaptador del canal; la ingesta no sabe
       // de qué forma lo mandó Meta.
       anuncio: anuncioDeWhatsapp(msg.referral),
+      waPhoneNumberId: phoneNumberId,
     });
   }
 }
@@ -349,7 +355,7 @@ export async function processEchoesValue(value: WebhookValue): Promise<void> {
       continue;
     }
     try {
-      await ingestManualEcho(credentials.organizationId, echo);
+      await ingestManualEcho(credentials.organizationId, echo, phoneNumberId);
     } catch (err) {
       // Un echo malformado jamás tumba el webhook (edge case del spec).
       console.error(`[webhook] error procesando echo ${echo.id}:`, err);
@@ -359,7 +365,8 @@ export async function processEchoesValue(value: WebhookValue): Promise<void> {
 
 async function ingestManualEcho(
   organizationId: string,
-  echo: WebhookMessage
+  echo: WebhookMessage,
+  phoneNumberId: string
 ): Promise<void> {
   const db = getDb();
   const identity = normalizeMx(echo.to!);
@@ -370,7 +377,9 @@ async function ingestManualEcho(
     waUserId: null,
     profileName: null,
   });
-  const conversation = await getOrCreateConversation(organizationId, contact.id);
+  const conversation = await getOrCreateConversation(organizationId, contact.id, {
+    waPhoneNumberId: phoneNumberId,
+  });
 
   const waTimestamp = toDate(echo.timestamp);
 
@@ -461,6 +470,8 @@ export async function ingestInboundMessage(input: {
   threadRef?: string | null;
   /** 016/018: el anuncio que abrió la conversación, ya normalizado por el canal. */
   anuncio?: AnuncioDeOrigen | null;
+  /** 068: el número del negocio al que escribió (WhatsApp). */
+  waPhoneNumberId?: string | null;
 }): Promise<void> {
   const db = getDb();
   const { organizationId } = input;
@@ -474,7 +485,11 @@ export async function ingestInboundMessage(input: {
     contact.id,
     // Un contacto de `correo` (prospecto de Sol) jamás llega por aquí: la
     // identidad entrante siempre es de un canal de mensajería.
-    { channel: isChannel(contact.channel) ? contact.channel : undefined, threadRef: input.threadRef ?? null }
+    {
+      channel: isChannel(contact.channel) ? contact.channel : undefined,
+      threadRef: input.threadRef ?? null,
+      waPhoneNumberId: input.waPhoneNumberId ?? null,
+    }
   );
 
   // 016/018 — Si el mensaje viene de un anuncio, capturar su origen ANTES del

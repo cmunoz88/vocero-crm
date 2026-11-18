@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { canConfigure } from "@/lib/auth/roles";
@@ -33,7 +34,7 @@ export const POST = withAuth(async (session, req: Request) => {
       tools: [...rol.herramientas],
       updatedAt: new Date(),
     })
-    .where(scoped(schema.agentProfile.organizationId, session.organizationId))
+    .where(scoped(schema.agentProfile.organizationId, session.organizationId, esAgentePrincipal()))
     .returning();
   if (!updated[0]) return apiError(404, "not_found", "Perfil no encontrado");
   return Response.json({ ok: true, role: rol.clave });

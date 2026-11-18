@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
@@ -23,7 +24,7 @@ export const GET = withAuth(async (session) => {
     db
       .select({ enabled: schema.agentProfile.enabled })
       .from(schema.agentProfile)
-      .where(scoped(schema.agentProfile.organizationId, session.organizationId))
+      .where(scoped(schema.agentProfile.organizationId, session.organizationId, esAgentePrincipal()))
       .limit(1),
     urlSaludCerebroDeOrg(session.organizationId).then((u) => getBrainHealth(u ?? undefined)),
     isAiConfiguredFor(session.organizationId),

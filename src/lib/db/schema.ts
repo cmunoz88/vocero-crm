@@ -93,6 +93,13 @@ export const organization = pgTable("organization", {
     .notNull()
     .default("active"),
   suspendedAt: timestamp("suspended_at"),
+  /**
+   * 068 — Quién contesta cada número: `compartido` (el agente principal en
+   * todos) o `por_numero` (el agente asignado a cada número).
+   */
+  agentMode: text("agent_mode", { enum: ["compartido", "por_numero"] })
+    .notNull()
+    .default("compartido"),
 });
 
 export const member = pgTable("member", {
@@ -401,13 +408,18 @@ export const conversation = pgTable(
     lastInboundAt: timestamp("last_inbound_at"),
     lastMessageAt: timestamp("last_message_at"),
     unreadCount: integer("unread_count").notNull().default(0),
+    /**
+     * 068 — El número de WhatsApp de esta conversación (el `phone_number_id`
+     * al que escribió el cliente). Nulo en otros canales.
+     */
+    waPhoneNumberId: text("wa_phone_number_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    // Una conversación real por contacto; las de prueba no compiten.
-    uniqueIndex("conversation_org_contact_real_uq")
-      .on(t.organizationId, t.contactId)
+    // Una conversación real por contacto Y número (068); las de prueba no compiten.
+    uniqueIndex("conversation_org_contact_num_real_uq")
+      .on(t.organizationId, t.contactId, sql`coalesce(${t.waPhoneNumberId}, '')`)
       .where(sql`${t.isTest} = false`),
     index("conversation_org_last_idx").on(t.organizationId, t.lastMessageAt),
   ]
@@ -538,11 +550,20 @@ export const metaCredentials = pgTable(
     status: text("status", { enum: ["connected", "reconnect_required"] })
       .notNull()
       .default("connected"),
+    /** 068 — Nombre del canal para el negocio («Ventas», «Soporte»). */
+    label: text("label"),
+    /** 068 — El agente de este número (con `organization.agent_mode = por_numero`). */
+    agentProfileId: text("agent_profile_id"),
+    /** 068 — El número principal: plantillas, CAPI y lo que no tiene número propio. */
+    isPrimary: boolean("is_primary").notNull().default(false),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
-    uniqueIndex("meta_credentials_org_uq").on(t.organizationId),
+    // 068 — Varios números por negocio; uno solo es el principal.
+    uniqueIndex("meta_credentials_org_primary_uq")
+      .on(t.organizationId)
+      .where(sql`${t.isPrimary} = true`),
     // El webhook enruta por phone_number_id: debe ser único en la instancia.
     uniqueIndex("meta_credentials_phone_uq").on(t.phoneNumberId),
   ]
@@ -712,10 +733,22 @@ export const agentProfile = pgTable(
      * todas: lo que tiene una instalación que actualiza.
      */
     tools: jsonb("tools").$type<string[]>(),
+    /**
+     * 068 — El agente principal del negocio (uno por negocio). Su `enabled`
+     * es el interruptor de la IA de TODO el negocio.
+     */
+    isDefault: boolean("is_default").notNull().default(false),
+    /** 068 — El modelo de este agente (de los autorizados); nulo = el de la plataforma. */
+    model: text("model"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
-  (t) => [uniqueIndex("agent_profile_org_uq").on(t.organizationId)]
+  (t) => [
+    uniqueIndex("agent_profile_org_default_uq")
+      .on(t.organizationId)
+      .where(sql`${t.isDefault} = true`),
+    index("agent_profile_org_idx").on(t.organizationId),
+  ]
 );
 
 export const kbEntry = pgTable(

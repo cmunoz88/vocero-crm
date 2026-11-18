@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { redirect } from "next/navigation";
 import { OnboardingClient } from "@/components/onboarding/onboarding-client";
 import { getSessionOrNull } from "@/lib/auth/session";
@@ -21,7 +22,7 @@ export default async function OnboardingPage() {
     getDb()
       .select({ name: schema.agentProfile.name })
       .from(schema.agentProfile)
-      .where(scoped(schema.agentProfile.organizationId, session.organizationId))
+      .where(scoped(schema.agentProfile.organizationId, session.organizationId, esAgentePrincipal()))
       .limit(1),
   ]);
   return (

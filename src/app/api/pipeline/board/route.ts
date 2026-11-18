@@ -1,3 +1,4 @@
+import { esConversacionVigente } from "@/server/inbox/conversacion-vigente";
 import { and, asc, eq } from "drizzle-orm";
 import { withAuth } from "@/lib/api";
 import { getDb, schema } from "@/lib/db";
@@ -28,7 +29,8 @@ export const GET = withAuth(async (session) => {
       schema.conversation,
       and(
         eq(schema.conversation.contactId, schema.contact.id),
-        eq(schema.conversation.isTest, false)
+        eq(schema.conversation.isTest, false),
+        esConversacionVigente(schema.contact.id)
       )
     )
     .where(scoped(schema.lead.organizationId, session.organizationId))

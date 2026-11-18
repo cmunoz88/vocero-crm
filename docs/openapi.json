@@ -44,7 +44,11 @@
     "/api/bot/profile": {
       "get": {
         "summary": "Perfil del agente y conocimiento",
-        "description": "Lo que el dueño configura en la pantalla Agente: nombre, tono, instrucciones, reglas de escalado, saludo, rol y herramientas encendidas, y la base de conocimiento ya renderizada. Cámbialo y relee: el cerebro no necesita redesplegarse.",
+        "description": "Lo que el dueño configura en la pantalla Agente: nombre, tono, instrucciones, reglas de escalado, saludo, rol y herramientas encendidas, y la base de conocimiento ya renderizada. Cámbialo y relee: el cerebro no necesita redesplegarse. 068 — Un negocio puede tener varios agentes (uno por número): con `agentId` (el `agent.id` del evento) o `conversationId` devuelve el de ese agente; sin ellos, el principal. `llm.model` es el modelo del agente si eligió uno.",
+        "parameters": [
+          { "name": "agentId", "in": "query", "required": false, "description": "068 — El `agent.id` que trae el evento de despacho.", "schema": { "type": "string" } },
+          { "name": "conversationId", "in": "query", "required": false, "description": "068 — El agente que atiende esa conversación (por su número).", "schema": { "type": "string" } }
+        ],
         "responses": {
           "200": { "description": "Perfil", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Perfil" } } } },
           "404": { "description": "Sin perfil todavía." },

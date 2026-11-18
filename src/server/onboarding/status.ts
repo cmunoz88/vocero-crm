@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
@@ -62,7 +63,7 @@ export async function onboardingStatus(
       enabled: schema.agentProfile.enabled,
     })
     .from(schema.agentProfile)
-    .where(scoped(schema.agentProfile.organizationId, organizationId))
+    .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
     .limit(1);
   const [kb] = await db
     .select({ id: schema.kbEntry.id })

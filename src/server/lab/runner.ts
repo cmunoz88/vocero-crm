@@ -1,3 +1,4 @@
+import { esAgentePrincipal } from "@/server/agents";
 import { and, asc, desc, eq, gt } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
@@ -64,7 +65,7 @@ export async function startRun(organizationId: string): Promise<string> {
   const [perfil] = await db
     .select({ role: schema.agentProfile.role })
     .from(schema.agentProfile)
-    .where(eq(schema.agentProfile.organizationId, organizationId))
+    .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
     .limit(1);
   const delRol = personasDelRol(perfil?.role);
 
@@ -131,7 +132,7 @@ async function runAllCases(
   const profileRows = await db
     .select()
     .from(schema.agentProfile)
-    .where(eq(schema.agentProfile.organizationId, organizationId))
+    .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
     .limit(1);
   const profile = profileRows[0];
   const behaviorText = profile

@@ -131,6 +131,8 @@ export function settingsSections({
     canales.push({ href: "/settings/channels", label: "Estado" });
   }
   canales.push({ href: "/settings/whatsapp", label: "WhatsApp" });
+  // 068 — Varios números y agentes por negocio.
+  canales.push({ href: "/settings/numbers", label: "Números y agentes" });
   if (instagram) canales.push({ href: "/settings/instagram", label: "Instagram" });
   if (messenger) canales.push({ href: "/settings/messenger", label: "Messenger" });
   if (tiktok) canales.push({ href: "/settings/tiktok", label: "TikTok" });

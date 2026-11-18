@@ -7,19 +7,32 @@ import { beforeAll, describe, expect, it, vi } from "vitest";
 
 const insertedRows: Record<string, unknown>[] = [];
 
-vi.mock("@/lib/db", () => ({
-  getDb: () => ({
-    insert: () => ({
-      values: (v: Record<string, unknown>) => {
-        insertedRows.push(v);
-        return {
-          onConflictDoUpdate: () => Promise.resolve(),
-        };
-      },
-    }),
+// 068: saveCredentials busca el principal y escribe en una transacción.
+const sinFilas = () => {
+  const q = { from: () => q, where: () => q, orderBy: () => q, limit: () => Promise.resolve([]) };
+  return q;
+};
+const dbFalsa = {
+  select: sinFilas,
+  insert: () => ({
+    values: (v: Record<string, unknown>) => {
+      insertedRows.push(v);
+      return Promise.resolve();
+    },
   }),
+  transaction: async (cb: (tx: unknown) => Promise<unknown>) => cb(dbFalsa),
+};
+
+vi.mock("@/lib/db", () => ({
+  getDb: () => dbFalsa,
   schema: {
-    metaCredentials: { organizationId: "organization_id" },
+    metaCredentials: {
+      organizationId: "organization_id",
+      phoneNumberId: "phone_number_id",
+      isPrimary: "is_primary",
+      createdAt: "created_at",
+      id: "id",
+    },
   },
 }));
 

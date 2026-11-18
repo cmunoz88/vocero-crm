@@ -1,4 +1,6 @@
+import { agenteDeConversacion, esAgentePrincipal } from "@/server/agents";
 import { and, eq } from "drizzle-orm";
+import { scoped } from "@/lib/db/tenant";
 import { getDb, schema } from "@/lib/db";
 import { encolarDespacho } from "@/server/dispatch/outbox";
 import { iniciarWorker, programarTanda } from "@/server/dispatch/worker";
@@ -48,9 +50,13 @@ export async function despacharAlCerebro(
     const [perfil] = await getDb()
       .select({ enabled: schema.agentProfile.enabled })
       .from(schema.agentProfile)
-      .where(eq(schema.agentProfile.organizationId, organizationId))
+      .where(scoped(schema.agentProfile.organizationId, organizationId, esAgentePrincipal()))
       .limit(1);
     if (!perfil?.enabled) return;
+    // 068 — El principal es el interruptor de todo el negocio; además, el
+    // agente del número (si es otro) tiene el suyo.
+    const agente = await agenteDeConversacion(organizationId, conversationId);
+    if (agente && !agente.enabled) return;
 
     // 025 — El despacho anota qué entrante lo provoca: es lo que le debe al
     // cerebro, aunque después la conversación tenga una respuesta.

@@ -76,6 +76,12 @@ export type EventoDespacho = {
   messages: MensajeDelEvento[];
   firstMessageAt: string;
   lastMessageAt: string;
+  /**
+   * 068 — Solo si atiende un agente que NO es el principal (modo por número).
+   * El cerebro pide su perfil con `GET /api/bot/profile?agentId=`. Ausente =
+   * el principal, como siempre.
+   */
+  agent?: { id: string; name: string };
 };
 
 /** Lo que hace falta saber de un mensaje para meterlo al evento. */
@@ -117,6 +123,8 @@ export function armarEvento(datos: {
   messages: MensajeParaEvento[];
   firstMessageAt: Date;
   lastMessageAt: Date;
+  /** 068 */
+  agent?: { id: string; name: string } | null;
 }): EventoDespacho {
   return {
     dispatchId: datos.dispatchId,
@@ -141,6 +149,8 @@ export function armarEvento(datos: {
     messages: datos.messages.map(mensajeDelEvento),
     firstMessageAt: datos.firstMessageAt.toISOString(),
     lastMessageAt: datos.lastMessageAt.toISOString(),
+    // 068 — Al final y solo si aplica: el cuerpo gemelo no cambia.
+    ...(datos.agent ? { agent: { id: datos.agent.id, name: datos.agent.name } } : {}),
   };
 }
 

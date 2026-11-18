@@ -65,6 +65,7 @@ export async function sembrarOrganizacion(tx: Tx, orgId: string): Promise<void> 
   await tx.insert(schema.agentProfile).values({
     id: newId("agentProfile"),
     organizationId: orgId,
+    isDefault: true,
   });
 }
 

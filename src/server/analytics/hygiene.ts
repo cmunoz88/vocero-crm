@@ -1,3 +1,4 @@
+import { esConversacionVigente } from "@/server/inbox/conversacion-vigente";
 import { and, asc, desc, eq, gt, isNotNull, isNull, lt, sql } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { scoped } from "@/lib/db/tenant";
@@ -80,7 +81,8 @@ async function leadsEnSilencio(organizationId: string, businessCurrency: string,
       schema.conversation,
       and(
         eq(schema.conversation.contactId, schema.lead.contactId),
-        eq(schema.conversation.isTest, false)
+        eq(schema.conversation.isTest, false),
+        esConversacionVigente(schema.lead.contactId)
       )
     )
     .where(

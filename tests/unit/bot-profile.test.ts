@@ -47,6 +47,8 @@ function profileRow(overrides: Partial<AgentProfile> = {}): AgentProfile {
     greeting: "¡Hola! Soy Sofi 🦷",
     role: "calificador",
     tools: null,
+    isDefault: true,
+    model: null,
     createdAt: new Date(),
     updatedAt: new Date(),
     ...overrides,

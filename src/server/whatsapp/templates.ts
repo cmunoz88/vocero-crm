@@ -13,6 +13,7 @@ import { publish } from "@/server/events/bus";
 import {
   cuentaDePlantillas,
   getCredentialsByOrg,
+  getCredentialsForNumber,
   getCredentialsByWabaId,
   markReconnectRequired,
 } from "@/server/whatsapp/credentials";
@@ -477,7 +478,8 @@ export async function sendTemplate(input: {
     );
   }
 
-  const creds = await getCredentialsByOrg(input.organizationId);
+  // 068 — La plantilla sale del número de la conversación (o del principal).
+  const creds = await getCredentialsForNumber(input.organizationId, row.conversation.waPhoneNumberId);
   if (!creds) throw new TemplateError("not_connected", "Sin número conectado");
   if (creds.status === "reconnect_required") {
     throw new TemplateError("reconnect_required", "Reconecta el número");

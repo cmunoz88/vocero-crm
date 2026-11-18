@@ -3,7 +3,7 @@ import { z } from "zod";
 import { getDb, schema } from "@/lib/db";
 import { apiError, parseBody } from "@/lib/api";
 import { requireBotKey, resolveInstanceOrg } from "@/server/bot/auth";
-import { getCredentialsByOrg } from "@/server/whatsapp/credentials";
+import { getCredentialsForNumber } from "@/server/whatsapp/credentials";
 import { graphRequest } from "@/lib/meta/client";
 
 export const dynamic = "force-dynamic";
@@ -68,7 +68,7 @@ export async function POST(req: Request) {
   const wamid = msgs[0]?.waMessageId;
   if (!wamid) return Response.json({ ok: false, reason: "no_inbound" });
 
-  const creds = await getCredentialsByOrg(organizationId);
+  const creds = await getCredentialsForNumber(organizationId, conv.waPhoneNumberId);
   if (!creds) {
     return apiError(409, "no_connection", "WhatsApp no está conectado");
   }

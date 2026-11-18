@@ -1,3 +1,4 @@
+import { esConversacionVigente } from "@/server/inbox/conversacion-vigente";
 import { and, desc, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
@@ -200,7 +201,8 @@ export async function reportStageChange(input: {
         and(
           eq(schema.conversation.organizationId, schema.lead.organizationId),
           eq(schema.conversation.contactId, schema.lead.contactId),
-          eq(schema.conversation.isTest, false)
+          eq(schema.conversation.isTest, false),
+          esConversacionVigente(schema.lead.contactId)
         )
       )
       .where(
