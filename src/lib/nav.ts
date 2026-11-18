@@ -113,7 +113,10 @@ export function settingsSections({
   instagram = false,
   messenger = false,
   tiktok = false,
+  ia = true,
 }: {
+  /** 068 — Sin «IA» cuando la llave es de la plataforma. */
+  ia?: boolean;
   agenda?: boolean;
   /** 016 — "Anuncios" existe solo con la bandera ATRIBUCION. */
   atribucion?: boolean;
@@ -138,7 +141,7 @@ export function settingsSections({
   if (tiktok) canales.push({ href: "/settings/tiktok", label: "TikTok" });
 
   // #85 — el proveedor de IA se configura aquí; el entorno queda de respaldo.
-  const agente: SettingsLink[] = [{ href: "/settings/ai", label: "IA" }];
+  const agente: SettingsLink[] = ia ? [{ href: "/settings/ai", label: "IA" }] : [];
   if (agenda) agente.push({ href: "/settings/calendar", label: "Agenda" });
 
   const negocio: SettingsLink[] = [

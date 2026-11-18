@@ -1,3 +1,4 @@
+import { iaBloqueada } from "@/server/platform/ia";
 import { SettingsNav } from "@/components/settings/settings-nav";
 import { agendaEnabled } from "@/server/agenda/flag";
 import { atribucionEnabled } from "@/server/attribution/flag";
@@ -20,6 +21,7 @@ export default function SettingsLayout({
       <div className="flex min-h-0 flex-1 flex-col sm:flex-row">
         <SettingsNav
           agenda={agendaEnabled()}
+          ia={!iaBloqueada()}
           atribucion={atribucionEnabled()}
           instagram={isChannelEnabled("instagram")}
           messenger={isChannelEnabled("messenger")}

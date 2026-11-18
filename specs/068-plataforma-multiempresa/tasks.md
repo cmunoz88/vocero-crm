@@ -27,7 +27,7 @@
 - [x] T306 E2E `scripts/e2e-numeros.mjs` (50 checks) · guía `docs/varios-numeros.md`
 
 ## Etapa 4 — Panel global
-- [ ] T401 Estadísticas por negocio e integraciones
-- [ ] T402 IA por negocio (apagar/encender) desde /admin
-- [ ] T403 Llave fija de OpenRouter + modelos autorizados por el superadmin
-- [ ] T404 E2E + deploy
+- [x] T401 Estadísticas por negocio e integraciones
+- [x] T402 IA por negocio (apagar/encender) desde /admin
+- [x] T403 Llave fija de OpenRouter + modelos autorizados por el superadmin
+- [x] T404 E2E `scripts/e2e-plataforma.mjs` (41 checks, con `PLATFORM_AI_LOCK=true`) + deploy

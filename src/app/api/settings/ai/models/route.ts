@@ -1,3 +1,4 @@
+import { iaBloqueada } from "@/server/platform/ia";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { listModels } from "@/lib/ai/probe";
 import {
@@ -14,6 +15,10 @@ export const dynamic = "force-dynamic";
  * (`soportado: false`) y el modelo se escribe a mano.
  */
 export const POST = withAuth(async (session, req: Request) => {
+  // 068 — Llave fija: el negocio no prueba ni lista con una llave propia.
+  if (iaBloqueada()) {
+    return apiError(403, "ia_de_la_plataforma", "La IA la administra la plataforma.");
+  }
   const body = await parseBody(req, aiModelsSchema);
   if (!body.ok) return body.response;
 

@@ -53,6 +53,19 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   sigue siendo el interruptor de la IA de todo el negocio. Migración `0030`
   aditiva (lo existente queda como principal). Guía: `docs/varios-numeros.md`.
 
+- **Panel global del superadministrador** (spec 068). /admin muestra las
+  cifras de la plataforma (negocios, IA encendida, números, conversaciones y
+  mensajes de 30 días; solo conteos), el estado de las integraciones (IA,
+  correo, cerebro) y, por negocio, sus cifras y un interruptor para
+  **apagar o encender la IA de todo el negocio** (el dueño puede volver a
+  encenderla; encender exige un cerebro sano). Todo queda en la bitácora.
+- **Llave de IA fija y modelos autorizados** (spec 068). Con
+  `PLATFORM_AI_LOCK=true`, todos los negocios piensan con la llave
+  `OPENROUTER_API_TOKEN` del entorno y Ajustes → IA desaparece para los
+  dueños. El superadministrador autoriza los modelos en /admin; cada agente
+  elige uno (Ajustes → Números y agentes) y el proxy del cerebro cambia un
+  modelo no autorizado por el de la plataforma. Migración `0031` aditiva.
+
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la
   instancia, quien administra la cuenta autoriza su WhatsApp en la ventana

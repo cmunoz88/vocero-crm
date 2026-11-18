@@ -1,3 +1,4 @@
+import { cuerpoConModeloAutorizado, modeloDePlataforma, modelosElegibles } from "@/server/platform/ia";
 import { apiRoot } from "@/lib/ai/presets";
 import { resolveAiProvider } from "@/lib/ai/provider";
 import { marcarEstadoPorRespuesta } from "@/server/ai/credentials";
@@ -49,6 +50,13 @@ export async function pensarPorElCerebro(input: {
     };
   }
   const { provider } = r;
+  // 068 — Los modelos autorizados por el superadministrador son un techo:
+  // uno fuera de la lista se cambia por el de la plataforma.
+  const cuerpoAutorizado = cuerpoConModeloAutorizado(
+    input.cuerpoCrudo,
+    await modelosElegibles(),
+    modeloDePlataforma() ?? provider.model
+  );
 
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), LLM_PROXY_TIMEOUT_MS);
@@ -60,7 +68,7 @@ export async function pensarPorElCerebro(input: {
         Authorization: `Bearer ${provider.token}`,
         "Content-Type": input.contentType ?? "application/json",
       },
-      body: input.cuerpoCrudo,
+      body: cuerpoAutorizado,
       signal: controller.signal,
     });
     const cuerpo = await res.text();

@@ -1,3 +1,4 @@
+import { estadisticasPorNegocio, type EstadisticasNegocio } from "@/server/platform/estadisticas";
 import { rm } from "node:fs/promises";
 import path from "node:path";
 import { and, asc, count, eq, inArray, isNull, sql } from "drizzle-orm";
@@ -26,11 +27,13 @@ export type TenantResumen = {
   members: number;
   whatsapp: { connected: boolean; phone: string | null };
   isPrimary: boolean;
+  /** 068 · etapa 4 — Solo conteos; nada del contenido. */
+  stats: EstadisticasNegocio;
 };
 
 export async function listarTenants(): Promise<TenantResumen[]> {
   const db = getDb();
-  const [orgs, miembros, numeros, primary] = await Promise.all([
+  const [orgs, miembros, numeros, primary, stats] = await Promise.all([
     db
       .select()
       .from(schema.organization)
@@ -44,12 +47,15 @@ export async function listarTenants(): Promise<TenantResumen[]> {
         organizationId: schema.metaCredentials.organizationId,
         status: schema.metaCredentials.status,
         phone: schema.metaCredentials.displayPhoneNumber,
+        isPrimary: schema.metaCredentials.isPrimary,
       })
       .from(schema.metaCredentials),
     primaryOrgId(),
+    estadisticasPorNegocio(),
   ]);
   const n = new Map(miembros.map((m) => [m.organizationId, m.n]));
-  const wa = new Map(numeros.map((w) => [w.organizationId, w]));
+  // 068 — Con varios números, el que se muestra es el principal.
+  const wa = new Map(numeros.filter((w) => w.isPrimary).map((w) => [w.organizationId, w]));
   return orgs.map((o) => {
     const w = wa.get(o.id);
     return {
@@ -62,6 +68,7 @@ export async function listarTenants(): Promise<TenantResumen[]> {
       members: n.get(o.id) ?? 0,
       whatsapp: { connected: w?.status === "connected", phone: w?.phone ?? null },
       isPrimary: o.id === primary,
+      stats: stats.get(o.id) ?? { conversaciones: 0, mensajes30d: 0, numeros: 0, agentes: 0, ia: false },
     };
   });
 }

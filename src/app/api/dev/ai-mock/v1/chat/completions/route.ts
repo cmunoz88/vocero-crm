@@ -26,12 +26,15 @@ export async function POST(req: Request) {
   if (rechazo) return Response.json(rechazo.body, { status: rechazo.status });
 
   const body = (await req.json().catch(() => ({}))) as {
+    model?: string;
     messages?: { role: string; content: string }[];
   };
   await aiMockRegistrar(body.messages ?? []);
   const content = aiMockCompletion(body.messages ?? []);
   return Response.json({
     id: "aimock",
+    // Como el proveedor real: dice con qué modelo contestó (068 lo comprueba).
+    model: body.model ?? null,
     choices: [{ index: 0, message: { role: "assistant", content } }],
   });
 }

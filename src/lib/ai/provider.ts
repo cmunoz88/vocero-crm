@@ -1,3 +1,4 @@
+import { iaBloqueada } from "@/server/platform/ia";
 import { isAiConfiguredByEnv } from "@/lib/env";
 import { last4, OPENROUTER_BASE_URL } from "@/lib/ai/presets";
 import {
@@ -130,14 +131,15 @@ export function resolver(
 export async function resolveAiProvider(
   organizationId?: string
 ): Promise<AiResolution> {
-  const cred = organizationId
+  // 068 — Llave fija de la plataforma: lo guardado por el negocio no cuenta.
+  const cred = organizationId && !iaBloqueada()
     ? await getAiCredentialSecret(organizationId)
     : null;
   return resolver(cred, envAiProvider());
 }
 
 export async function estadoIaDe(organizationId: string): Promise<EstadoIa> {
-  const cred = await getAiCredentialPublic(organizationId);
+  const cred = iaBloqueada() ? null : await getAiCredentialPublic(organizationId);
   const env = envAiProvider();
   return interpretarCredencial(cred, env ? { last4: last4(env.token) } : null);
 }

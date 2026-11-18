@@ -16,6 +16,11 @@ const resolveAiProvider = vi.hoisted(() => vi.fn<() => Promise<AiResolution>>())
 vi.mock("@/lib/ai/provider", () => ({ resolveAiProvider }));
 const marcarEstadoPorRespuesta = vi.hoisted(() => vi.fn(async () => true));
 vi.mock("@/server/ai/credentials", () => ({ marcarEstadoPorRespuesta }));
+// 068 · etapa 4 — Sin modelos autorizados en la base: el cuerpo pasa tal cual.
+vi.mock("@/server/platform/ia", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/server/platform/ia")>()),
+  modelosElegibles: async () => [],
+}));
 vi.mock("@/server/bot/auth", async (importOriginal) => ({
   ...(await importOriginal<typeof import("@/server/bot/auth")>()),
   resolveInstanceOrg: async () => "org_1",

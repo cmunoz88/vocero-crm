@@ -20,6 +20,7 @@ export type TenantRow = {
   members: number;
   whatsapp: { connected: boolean; phone: string | null };
   isPrimary: boolean;
+  stats: { conversaciones: number; mensajes30d: number; numeros: number; agentes: number; ia: boolean };
 };
 
 export function generarPassword(): string {
@@ -106,9 +107,11 @@ export function TenantsClient() {
             <div className="hidden text-right text-xs text-text-3 sm:block">
               <p>{t.whatsapp.connected ? (t.whatsapp.phone ?? "WhatsApp conectado") : "Sin WhatsApp"}</p>
               <p>
-                {t.members} {t.members === 1 ? "cuenta" : "cuentas"}
+                {t.members} {t.members === 1 ? "cuenta" : "cuentas"} · {t.stats.conversaciones} conv. ·{" "}
+                {t.stats.numeros} {t.stats.numeros === 1 ? "número" : "números"}
               </p>
             </div>
+            <Badge variant={t.stats.ia ? "success" : "secondary"}>{t.stats.ia ? "IA" : "Sin IA"}</Badge>
             <Badge variant={t.status === "active" ? "success" : "warning"}>
               {t.status === "active" ? "Activo" : "Suspendido"}
             </Badge>

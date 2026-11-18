@@ -1,3 +1,4 @@
+import { modelosElegibles } from "@/server/platform/ia";
 import { eq } from "drizzle-orm";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
@@ -18,6 +19,8 @@ const patchSchema = z.object({
   tone: z.string().max(500).nullable().optional(),
   greeting: z.string().max(1000).nullable().optional(),
   enabled: z.boolean().optional(),
+  /** 068 · etapa 4 — Uno de los modelos autorizados; null = el de la plataforma. */
+  model: z.string().trim().min(1).max(120).nullable().optional(),
 });
 
 export const PATCH = withAuth(async (session, req: Request, ctx: Ctx) => {
@@ -27,8 +30,12 @@ export const PATCH = withAuth(async (session, req: Request, ctx: Ctx) => {
   if (!body.ok) return body.response;
   const a = await agentePorId(session.organizationId, id);
   if (!a) return apiError(404, "not_found", "Agente no encontrado");
-  if (a.isDefault) {
+  // Del principal aquí solo se elige el modelo; lo demás, en la pantalla del Agente.
+  if (a.isDefault && Object.keys(body.data).some((k) => k !== "model")) {
     return apiError(409, "principal", "El agente principal se edita en la pantalla del Agente");
+  }
+  if (body.data.model && !(await modelosElegibles()).includes(body.data.model)) {
+    return apiError(422, "modelo_no_autorizado", "Ese modelo no está autorizado en la plataforma");
   }
   await getDb()
     .update(schema.agentProfile)

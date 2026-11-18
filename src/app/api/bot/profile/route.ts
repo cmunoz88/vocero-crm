@@ -1,3 +1,4 @@
+import { modeloEfectivo, modelosElegibles } from "@/server/platform/ia";
 import { agenteDeConversacion, agentePorId, esAgentePrincipal } from "@/server/agents";
 import { asc, eq } from "drizzle-orm";
 import { scoped } from "@/lib/db/tenant";
@@ -55,7 +56,7 @@ export async function GET(req: Request) {
   // 036 — Con qué piensa el cerebro que no trae llave: el proxy del CRM.
   const ia = await resolveAiProvider(organizationId);
   // 068 — El modelo del agente (de los autorizados) gana al de la plataforma.
-  const modelo = profile.model || (ia.ok ? ia.provider.model : null);
+  const modelo = modeloEfectivo(profile.model, await modelosElegibles(), ia.ok ? ia.provider.model : null);
   const llm: BotLlm = ia.ok && modelo ? { path: "/api/bot/llm", model: modelo } : null;
 
   return Response.json(serializeBotProfile(profile, kb, llm));

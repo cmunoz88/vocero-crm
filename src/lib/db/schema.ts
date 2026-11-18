@@ -1520,6 +1520,17 @@ export const oneTimeSecret = pgTable("one_time_secret", {
  * usa una sola vez y vence. Sin organization_id hasta que se usa: el negocio
  * aún no existe.
  */
+/**
+ * 068 · etapa 4 — Ajustes de la plataforma (p. ej. los modelos autorizados).
+ * Sin organization_id a propósito: son de la plataforma, no de un negocio.
+ */
+export const platformSetting = pgTable("platform_setting", {
+  key: text("key").primaryKey(),
+  value: jsonb("value").notNull(),
+  updatedBy: text("updated_by"),
+  updatedAt: timestamp("updated_at").notNull().defaultNow(),
+});
+
 export const businessInvitation = pgTable(
   "business_invitation",
   {

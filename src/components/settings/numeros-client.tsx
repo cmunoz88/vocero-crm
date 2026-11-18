@@ -19,7 +19,7 @@ type Numero = {
   agentProfileId: string | null;
   tokenLast4: string;
 };
-type Agente = { id: string; name: string; enabled: boolean; isDefault: boolean; instructions: string | null };
+type Agente = { id: string; name: string; enabled: boolean; isDefault: boolean; instructions: string | null; model: string | null };
 type Modo = "compartido" | "por_numero";
 
 async function enviar(url: string, method: string, body?: unknown): Promise<string | null> {
@@ -42,6 +42,7 @@ export function NumerosClient() {
   const [numeros, setNumeros] = useState<Numero[]>([]);
   const [agentes, setAgentes] = useState<Agente[]>([]);
   const [modo, setModo] = useState<Modo>("compartido");
+  const [modelos, setModelos] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [nuevo, setNuevo] = useState({ label: "", wabaId: "", phoneNumberId: "", token: "" });
   const [abierto, setAbierto] = useState(false);
@@ -57,6 +58,7 @@ export function NumerosClient() {
     if (a) {
       setAgentes(a.agentes);
       setModo(a.modo);
+      setModelos(a.modelos ?? []);
     }
   }, []);
 
@@ -218,6 +220,19 @@ export function NumerosClient() {
             {agentes.map((a) => (
               <li key={a.id} data-testid="agente" className="flex items-center gap-3 rounded-lg border p-3">
                 <span className="flex-1 font-medium">{a.name}</span>
+                {modelos.length > 1 && (
+                  <select
+                    aria-label={`Modelo de ${a.name}`}
+                    className="h-9 max-w-48 rounded-md border bg-background px-2 text-xs"
+                    value={a.model ?? ""}
+                    onChange={(e) => void accion(`/api/agents/${a.id}`, "PATCH", { model: e.target.value || null })}
+                  >
+                    <option value="">Modelo de la plataforma</option>
+                    {modelos.map((m) => (
+                      <option key={m} value={m}>{m}</option>
+                    ))}
+                  </select>
+                )}
                 {a.isDefault ? (
                   <Badge variant="secondary">Principal</Badge>
                 ) : (

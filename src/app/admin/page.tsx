@@ -1,3 +1,4 @@
+import { PlataformaClient } from "@/components/admin/plataforma-client";
 import { InvitacionesClient } from "@/components/admin/invitaciones-client";
 import { TenantsClient } from "@/components/admin/tenants-client";
 
@@ -7,6 +8,7 @@ export const metadata = { title: "Negocios · Plataforma" };
 export default function AdminPage() {
   return (
     <div className="space-y-8">
+      <PlataformaClient />
       <TenantsClient />
       <InvitacionesClient />
     </div>

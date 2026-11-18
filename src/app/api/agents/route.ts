@@ -1,3 +1,4 @@
+import { modelosElegibles } from "@/server/platform/ia";
 import { z } from "zod";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import { cambiarModoAgentes, crearAgente, listarAgentes, modoDeAgentes } from "@/server/agents";
@@ -8,6 +9,8 @@ export const dynamic = "force-dynamic";
 export const GET = withAuth(async (session) => {
   const agentes = await listarAgentes(session.organizationId);
   return Response.json({
+    // 068 · etapa 4 — Lo que cada agente puede elegir (el de la plataforma + los autorizados).
+    modelos: await modelosElegibles(),
     modo: await modoDeAgentes(session.organizationId),
     agentes: agentes.map((a) => ({
       id: a.id,

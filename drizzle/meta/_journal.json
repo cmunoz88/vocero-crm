@@ -218,6 +218,13 @@
       "when": 1795026339933,
       "tag": "0030_numeros_y_agentes",
       "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1795027925918,
+      "tag": "0031_ajustes_plataforma",
+      "breakpoints": true
     }
   ]
 }

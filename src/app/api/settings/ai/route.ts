@@ -1,3 +1,4 @@
+import { iaBloqueada } from "@/server/platform/ia";
 import { apiError, parseBody, withAuth } from "@/lib/api";
 import {
   AiCredentialError,
@@ -20,10 +21,17 @@ export const dynamic = "force-dynamic";
  */
 
 export const GET = withAuth(async (session) => {
-  return Response.json(await vistaAjustesIa(session.organizationId));
+  return Response.json({ ...(await vistaAjustesIa(session.organizationId)), bloqueada: iaBloqueada() });
 });
 
+/** 068 — Con la llave fija de la plataforma, el negocio no la cambia. */
+function bloqueada() {
+  return apiError(403, "ia_de_la_plataforma", "La IA la administra la plataforma: no se puede cambiar desde aquí.");
+}
+
+
 export const PUT = withAuth(async (session, req: Request) => {
+  if (iaBloqueada()) return bloqueada();
   const body = await parseBody(req, aiSettingsPutSchema);
   if (!body.ok) return body.response;
 
@@ -45,6 +53,7 @@ export const PUT = withAuth(async (session, req: Request) => {
 });
 
 export const DELETE = withAuth(async (session) => {
+  if (iaBloqueada()) return bloqueada();
   await deleteAiCredential(session.organizationId);
   return Response.json(await vistaAjustesIa(session.organizationId));
 });

@@ -80,10 +80,57 @@ export function TenantDetailClient({ id }: { id: string }) {
       </div>
 
       <DatosCard tenant={t} onSaved={refetch} />
+      <IaCard id={id} tenant={t} onChange={refetch} />
       <CerebroCard id={id} brain={d.brain} onChange={refetch} />
       <CuentasCard members={d.members} />
       <PeligroCard tenant={t} onChange={refetch} />
     </div>
+  );
+}
+
+/**
+ * 068 · etapa 4 — Apagar o encender la IA de TODO el negocio (el agente
+ * principal). El dueño puede volver a encenderla desde su pantalla Agente.
+ */
+function IaCard({ id, tenant, onChange }: { id: string; tenant: TenantRow; onChange: () => Promise<void> }) {
+  const [error, setError] = useState<string | null>(null);
+  const [guardando, setGuardando] = useState(false);
+  const s = tenant.stats;
+  async function cambiar(enabled: boolean) {
+    setGuardando(true);
+    setError(null);
+    const res = await fetch(`/api/admin/tenants/${id}/ia`, json("PATCH", { enabled })).catch(() => null);
+    setGuardando(false);
+    if (!res?.ok) setError(await errorDe(res, "No se pudo cambiar"));
+    await onChange();
+  }
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          Inteligencia artificial
+          <Badge variant={s.ia ? "success" : "secondary"}>{s.ia ? "Encendida" : "Apagada"}</Badge>
+        </CardTitle>
+        <CardDescription>
+          {s.conversaciones} conversaciones · {s.mensajes30d} mensajes en 30 días · {s.numeros}{" "}
+          {s.numeros === 1 ? "número" : "números"} · {s.agentes} {s.agentes === 1 ? "agente" : "agentes"}
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="space-y-2">
+        <p className="text-sm text-text-2">
+          Apagarla deja todos los chats de este negocio en manual. Su dueño puede volver a encenderla.
+        </p>
+        <Button
+          variant={s.ia ? "outline" : "default"}
+          disabled={guardando}
+          onClick={() => void cambiar(!s.ia)}
+          data-testid="ia-negocio"
+        >
+          {s.ia ? "Apagar la IA" : "Encender la IA"}
+        </Button>
+        {error && <p className="text-sm text-destructive">{error}</p>}
+      </CardContent>
+    </Card>
   );
 }
 
