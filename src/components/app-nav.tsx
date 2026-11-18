@@ -3,7 +3,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { AlertTriangle, Bell, BellOff, LogOut, X } from "lucide-react";
+import { AlertTriangle, Bell, BellOff, KeyRound, LogOut, X } from "lucide-react";
 import { BrandTile } from "@/components/brand-mark";
 import { BotonInstalar } from "@/components/pwa";
 import { BotonActivarAvisos } from "@/components/activar-avisos";
@@ -347,6 +347,14 @@ export function AppNav({
         <span className="flex shrink-0 items-center">
           {campana}
           <ThemeToggle initial={apariencia} />
+          <Link
+            href="/cuenta"
+            aria-label="Mi cuenta"
+            title="Mi cuenta (cambiar contraseña)"
+            className="rounded p-1 text-text-3 hover:text-foreground"
+          >
+            <KeyRound className="h-4 w-4" strokeWidth={1.7} />
+          </Link>
           <button
             aria-label="Cerrar sesión"
             title="Cerrar sesión"
@@ -506,6 +514,10 @@ function Riel({
               </div>
               <BotonActivarAvisos className={navItemClass(false)} />
               <BotonInstalar className={navItemClass(false)} />
+              <Link href="/cuenta" className={navItemClass(false)}>
+                <KeyRound className="h-5 w-5 shrink-0 text-text-3" strokeWidth={1.8} aria-hidden />
+                Mi cuenta
+              </Link>
               <button
                 type="button"
                 onClick={onSalir}

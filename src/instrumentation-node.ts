@@ -1,3 +1,4 @@
+import { aplicarPasswordSuperadmin, hayCerebrosPorNegocio } from "@/server/tenants/bootstrap";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { mediaDirStatus } from "@/server/media-dir";
@@ -95,6 +96,15 @@ export async function encryptLegacySecrets(): Promise<void> {
  * mal configurado se dice aquí una vez, además de en la tarjeta «Quién
  * responde»: es el log que alguien mira cuando el agente no contesta.
  */
+/** 067 — `SUPERADMIN_SET_PASSWORD`: rescate de acceso. Nunca tumba el arranque. */
+export async function rescateSuperadmin(): Promise<void> {
+  try {
+    await aplicarPasswordSuperadmin();
+  } catch (err) {
+    console.error("[boot] rescate de superusuario falló:", err instanceof Error ? err.message : err);
+  }
+}
+
 export function resumeDispatch(): void {
   const config = leerConfigDespacho();
   if (config.active) {
@@ -103,6 +113,16 @@ export function resumeDispatch(): void {
     console.log(`[boot] despacho al cerebro activo → ${config.host}`);
     return;
   }
+  // 067 — Sin cerebro en el entorno, puede haberlo por negocio: el worker
+  // retoma sus turnos pendientes igual (la consulta no bloquea el arranque).
+  void hayCerebrosPorNegocio()
+    .then((hay) => {
+      if (!hay) return;
+      iniciarWorker();
+      void tanda();
+      console.log("[boot] despacho activo para los negocios con cerebro propio");
+    })
+    .catch(() => {});
   if (config.problem === "url") {
     console.error(
       "[boot] BRAIN_DISPATCH_URL no es una URL http:// o https:// válida (sin usuario:clave): el despacho al cerebro queda INACTIVO."

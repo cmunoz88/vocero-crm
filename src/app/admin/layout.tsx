@@ -37,6 +37,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Ir a mi CRM
               </Link>
             )}
+            <Link href="/cuenta" className="rounded-md px-3 py-1.5 text-text-2 hover:bg-accent hover:text-foreground">
+              Mi cuenta
+            </Link>
             <span className="hidden px-2 text-text-3 sm:inline">{admin.email}</span>
             <SalirButton />
           </div>

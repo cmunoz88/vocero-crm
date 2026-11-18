@@ -20,6 +20,12 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   la variable, todo queda como antes. Migración `0027` aditiva (aplica sola
   al arrancar).
 
+- **Mi cuenta** (`/cuenta`): cualquiera con sesión cambia su contraseña
+  (pide la actual y cierra las otras sesiones). Enlace en el menú y en
+  `/admin`. Para un superusuario sin acceso, `SUPERADMIN_SET_PASSWORD` (+
+  `SUPERADMIN_SET_PASSWORD_FOR`) crea o restablece su cuenta al arrancar; se
+  quita después de entrar.
+
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la
   instancia, quien administra la cuenta autoriza su WhatsApp en la ventana

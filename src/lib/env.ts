@@ -56,6 +56,11 @@ export const envSchema = z.object({
   // 067 — Superusuarios de la plataforma (correos separados por coma): ven
   // /admin para crear, suspender y borrar negocios. Sin ella, /admin no existe.
   SUPERADMIN_EMAILS: z.string().optional(),
+  // 067 — Rescate de acceso: al arrancar, crea o restablece la cuenta de los
+  // superusuarios con esta contraseña (solo los de SUPERADMIN_SET_PASSWORD_FOR,
+  // si se define). Se quita después de entrar.
+  SUPERADMIN_SET_PASSWORD: z.string().optional(),
+  SUPERADMIN_SET_PASSWORD_FOR: z.string().optional(),
   AGENT_COALESCE_MS: z.coerce.number().int().min(0).default(6000),
   WA_MOCK_ENABLED: z.string().optional(),
   // API key de un cerebro externo que conduzca la conversación por /api/bot/*.

@@ -203,7 +203,12 @@ async function main() {
     const c = (await a.api("/api/conversations")).json?.conversations ?? [];
     return c.length ? c : null;
   });
-  const convsB = (await b.api("/api/conversations")).json?.conversations ?? [];
+  // Las dos ingestas corren en paralelo (y en frío compilan): se espera a cada una.
+  const convsB =
+    (await esperar(async () => {
+      const c = (await b.api("/api/conversations")).json?.conversations ?? [];
+      return c.length ? c : null;
+    })) ?? [];
   ok("A ve solo su conversación", convsA?.length === 1 && convsA[0].contact.name === "Cliente 0001", convsA);
   ok("B ve solo la suya", convsB.length === 1 && convsB[0].contact.name === "Cliente 0002", convsB);
   ok(
