@@ -1480,3 +1480,35 @@ export const oneTimeSecret = pgTable("one_time_secret", {
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
+
+/**
+ * 068 — Invitación para que un cliente registre SU negocio. El token y el
+ * código de verificación del correo se guardan solo como hash (SHA-256); se
+ * usa una sola vez y vence. Sin organization_id hasta que se usa: el negocio
+ * aún no existe.
+ */
+export const businessInvitation = pgTable(
+  "business_invitation",
+  {
+    id: text("id").primaryKey(),
+    tokenHash: text("token_hash").notNull().unique(),
+    status: text("status", {
+      enum: ["pendiente", "verificando", "verificada", "consumiendo", "usada", "revocada"],
+    })
+      .notNull()
+      .default("pendiente"),
+    note: text("note"),
+    createdBy: text("created_by"),
+    businessName: text("business_name"),
+    email: text("email"),
+    codeHash: text("code_hash"),
+    codeExpiresAt: timestamp("code_expires_at"),
+    verifiedAt: timestamp("verified_at"),
+    usedAt: timestamp("used_at"),
+    organizationId: text("organization_id").references(() => organization.id, { onDelete: "set null" }),
+    expiresAt: timestamp("expires_at").notNull(),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+    updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("business_invitation_created_idx").on(t.createdAt)]
+);

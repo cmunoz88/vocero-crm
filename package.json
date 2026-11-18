@@ -22,6 +22,7 @@
     "test:e2e:lista": "node --env-file=.env scripts/e2e-lista-compartida.mjs",
     "test:e2e:cuenta-de-mensajes": "node --env-file=.env scripts/e2e-cuenta-de-mensajes.mjs",
     "test:e2e:embedded-signup": "node --env-file=.env scripts/e2e-embedded-signup.mjs",
+    "test:e2e:invitaciones": "node --env-file=.env scripts/e2e-invitaciones.mjs",
     "test:e2e:acceso": "node --env-file=.env scripts/e2e-acceso.mjs",
     "test:e2e:multi-tenant": "node --env-file=.env scripts/e2e-multi-tenant.mjs",
     "eval:silencios": "esbuild scripts/eval-silencios.ts --bundle --platform=node --format=esm --outfile=.tmp-eval-silencios.mjs --alias:@=./src --log-level=warning && node --env-file=.env .tmp-eval-silencios.mjs",

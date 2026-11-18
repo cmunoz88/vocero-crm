@@ -34,6 +34,15 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   `SUPERADMIN_EMAILS` y `SUPERADMIN_SET_PASSWORD*` dejan de usarse: quítalas.
   Migración `0028` aditiva.
 
+- **Invitar negocio** (spec 068). En /admin, el superadministrador genera un
+  enlace único (un solo uso, vence en 7 días; solo se guarda su hash) y se lo
+  manda al cliente. El cliente pone el nombre de su negocio y su correo, lo
+  verifica con el enlace que le llega, elige usuario y contraseña, y queda
+  dentro de su propio CRM: el negocio, su cuenta y la membresía de dueño se
+  crean en un solo paso (dos envíos a la vez no crean dos negocios). Sin
+  correo configurado, el superadministrador entrega el enlace de verificación.
+  Migración `0029` aditiva.
+
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la
   instancia, quien administra la cuenta autoriza su WhatsApp en la ventana

@@ -46,6 +46,7 @@ const prefixes = {
   // 068 — plataforma
   auditLog: "aud",
   oneTimeSecret: "ots",
+  businessInvitation: "inv",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

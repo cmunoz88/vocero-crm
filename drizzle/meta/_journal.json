@@ -204,6 +204,13 @@
       "when": 1795023913388,
       "tag": "0028_plataforma",
       "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1795025774756,
+      "tag": "0029_invitaciones",
+      "breakpoints": true
     }
   ]
 }

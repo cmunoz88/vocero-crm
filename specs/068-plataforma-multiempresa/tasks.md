@@ -11,12 +11,12 @@
 - [x] T108 /admin/usuarios: lista, borrar, enlace de restablecimiento copiable
 - [x] T109 Bitácora en acciones administrativas
 - [x] T110 E2E `scripts/e2e-acceso.mjs` + regresión multi-tenant y cuenta
-- [ ] T111 Deploy + borrar maestra@ y cesar@
+- [x] T111 Deploy (bab19dd). Borrar maestra@ y cesar@: ya sin rol; se borran desde /admin → Usuarios
 
 ## Etapa 2 — Invitaciones
-- [ ] T201 `business_invitation` + servicio (crear, revocar, solicitar, verificar, completar con reclamo atómico)
-- [ ] T202 UI /admin «Invitar negocio» + páginas públicas `/invitacion/[token]`
-- [ ] T203 E2E (vencida, un solo uso, carrera, sin correo)
+- [x] T201 `business_invitation` + servicio (crear, revocar, solicitar, verificar, completar con reclamo atómico)
+- [x] T202 UI /admin «Invitar negocio» + páginas públicas `/invitacion/[token]`
+- [x] T203 E2E (vencida, un solo uso, carrera, sin correo)
 
 ## Etapa 3 — Números y agentes
 - [ ] T301 Varios `meta_credentials` por negocio (+ `label`, `agent_id`)
