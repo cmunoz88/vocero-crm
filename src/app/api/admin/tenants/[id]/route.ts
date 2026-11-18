@@ -76,6 +76,8 @@ export const DELETE = withSuperadmin(async (admin, req: Request, ctx: Ctx) => {
       return apiError(422, "confirmacion", "Escribe el web ID exacto del negocio para confirmar.");
     case "activo":
       return apiError(409, "activo", "Suspende el negocio antes de borrarlo.");
+    case "principal":
+      return apiError(409, "principal", "El negocio principal no se borra (usa el cerebro del entorno y recibe los prospectos de Sol).");
     case "propio":
       return apiError(409, "propio", "No puedes borrar el negocio al que perteneces.");
   }

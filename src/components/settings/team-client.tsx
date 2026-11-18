@@ -14,6 +14,7 @@ type Member = {
   role: string;
   name: string;
   email: string;
+  username?: string | null;
   createdAt: string;
 };
 
@@ -21,8 +22,9 @@ export function TeamClient() {
   const [members, setMembers] = useState<Member[]>([]);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [tempPassword, setTempPassword] = useState("");
-  const [created, setCreated] = useState<{ email: string; password: string } | null>(null);
+  const [created, setCreated] = useState<{ username: string; password: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
@@ -54,7 +56,7 @@ export function TeamClient() {
     const res = await fetch("/api/settings/team", {
       method: "POST",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ name, email, password: tempPassword }),
+      body: JSON.stringify({ name, email, username: username.trim(), password: tempPassword }),
     }).catch(() => null);
     setSaving(false);
     if (!res?.ok) {
@@ -64,7 +66,8 @@ export function TeamClient() {
       setError(data?.error?.message ?? "No se pudo crear la cuenta");
       return;
     }
-    setCreated({ email, password: tempPassword });
+    setCreated({ username: username.trim(), password: tempPassword });
+    setUsername("");
     setName("");
     setEmail("");
     setTempPassword("");
@@ -92,7 +95,7 @@ export function TeamClient() {
               />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="team-email">Correo</Label>
+              <Label htmlFor="team-email">Correo (recuperación)</Label>
               <Input
                 id="team-email"
                 type="email"
@@ -100,6 +103,16 @@ export function TeamClient() {
                 onChange={(e) => setEmail(e.target.value)}
               />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="team-username">Usuario (con él entra)</Label>
+            <Input
+              id="team-username"
+              autoCapitalize="none"
+              spellCheck={false}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="team-password">Contraseña temporal</Label>
@@ -122,14 +135,18 @@ export function TeamClient() {
               <p className="mt-1 text-success-text opacity-90">
                 Comparte estos datos ahora (no se volverán a mostrar):
                 <br />
-                <code>{created.email}</code> · contraseña{" "}
+                usuario <code>{created.username}</code> · contraseña{" "}
                 <code>{created.password}</code>
               </p>
             </div>
           )}
           <Button
             disabled={
-              saving || !name.trim() || !email.trim() || tempPassword.length < 8
+              saving ||
+              !name.trim() ||
+              !email.trim() ||
+              !/^[a-zA-Z0-9_.]{3,30}$/.test(username.trim()) ||
+              tempPassword.length < 8
             }
             onClick={() => void create()}
           >
@@ -151,7 +168,10 @@ export function TeamClient() {
             <ContactAvatar name={m.name} seed={m.id} size="sm" />
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{m.name}</p>
-              <p className="text-xs text-muted-foreground">{m.email}</p>
+              <p className="text-xs text-muted-foreground">
+                {m.username ? <span className="font-mono">@{m.username} · </span> : null}
+                {m.email}
+              </p>
             </div>
             <Badge variant={m.role === "owner" ? "default" : "secondary"}>
               {m.role === "owner" ? "Propietario" : "Miembro"}

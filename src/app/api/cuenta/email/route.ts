@@ -5,7 +5,7 @@ import { apiError, parseBody } from "@/lib/api";
 import { getAuth } from "@/lib/auth";
 import { getDb, schema } from "@/lib/db";
 import { checkRateLimit } from "@/lib/rate-limit";
-import { esSuperadmin } from "@/server/tenants/superadmin";
+import { registrarAuditoria } from "@/server/platform/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -15,12 +15,9 @@ const bodySchema = z.object({
 });
 
 /**
- * 067 — Cambiar el propio correo (el que se usa para entrar). Pide la
- * contraseña: con solo una sesión abierta nadie se queda con la cuenta.
- *
- * Un superusuario no puede cambiarse a un correo fuera de
- * `SUPERADMIN_EMAILS`: perdería /admin sin darse cuenta (ser superusuario va
- * por correo, a propósito, y solo lo cambia quien controla el despliegue).
+ * 067/068 — Cambiar el propio correo (el de contacto y recuperación; se
+ * entra con el usuario). Pide la contraseña: con solo una sesión abierta nadie
+ * se queda con la cuenta. El correo nuevo queda SIN verificar hasta confirmarlo.
  */
 export async function POST(req: Request) {
   const auth = getAuth();
@@ -35,14 +32,6 @@ export async function POST(req: Request) {
   const { email, password } = body.data;
   const actual = session.user.email.toLowerCase();
   if (email === actual) return apiError(422, "mismo", "Ese ya es tu correo.");
-
-  if (esSuperadmin(actual) && !esSuperadmin(email)) {
-    return apiError(
-      409,
-      "superadmin",
-      "Eres superusuario y eso va por correo: el nuevo tiene que estar en SUPERADMIN_EMAILS antes de cambiarlo, o perderías el acceso a Negocios."
-    );
-  }
 
   const db = getDb();
   const [cred] = await db
@@ -79,5 +68,11 @@ export async function POST(req: Request) {
     }
     throw err;
   }
+  await registrarAuditoria({
+    actor: { userId: session.user.id },
+    action: "cuenta.correo_cambiado",
+    target: { type: "user", id: session.user.id },
+    req,
+  });
   return Response.json({ ok: true, email });
 }

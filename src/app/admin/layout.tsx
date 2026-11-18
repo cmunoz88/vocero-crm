@@ -32,6 +32,12 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             Plataforma
           </span>
           <div className="ml-auto flex items-center gap-1 text-sm">
+            <Link href="/admin" className="rounded-md px-3 py-1.5 text-text-2 hover:bg-accent hover:text-foreground">
+              Negocios
+            </Link>
+            <Link href="/admin/usuarios" className="rounded-md px-3 py-1.5 text-text-2 hover:bg-accent hover:text-foreground">
+              Usuarios
+            </Link>
             {session && (
               <Link href="/inbox" className="rounded-md px-3 py-1.5 text-text-2 hover:bg-accent hover:text-foreground">
                 Ir a mi CRM
@@ -40,7 +46,7 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             <Link href="/cuenta" className="rounded-md px-3 py-1.5 text-text-2 hover:bg-accent hover:text-foreground">
               Mi cuenta
             </Link>
-            <span className="hidden px-2 text-text-3 sm:inline">{admin.email}</span>
+            <span className="hidden px-2 text-text-3 sm:inline">{admin.username ?? admin.email}</span>
             <SalirButton />
           </div>
         </div>

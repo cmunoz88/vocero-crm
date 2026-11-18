@@ -20,13 +20,19 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   la variable, todo queda como antes. Migración `0027` aditiva (aplica sola
   al arrancar).
 
-- **Mi cuenta** (`/cuenta`): cualquiera con sesión cambia su nombre, su
-  correo (pide la contraseña; un superusuario solo a otro correo de
-  `SUPERADMIN_EMAILS`) y su contraseña (pide la actual y cierra las otras
-  sesiones). Enlace en el menú y en
-  `/admin`. Para un superusuario sin acceso, `SUPERADMIN_SET_PASSWORD` (+
-  `SUPERADMIN_SET_PASSWORD_FOR`) crea o restablece su cuenta al arrancar; se
-  quita después de entrar.
+- **Plataforma multiempresa** (spec 068, reemplaza el superusuario por
+  correo). **Se entra con nombre de usuario**: las cuentas existentes reciben
+  uno al arrancar (derivado de su correo, visible en /admin → Usuarios y en
+  Mi cuenta). Un único **superadministrador** («Optimus», rol en la base) se
+  crea al arrancar con `SUPERADMIN_RECOVERY_EMAIL`; su contraseña aleatoria se
+  ve **una vez** en `/setup/credenciales` con `SETUP_REVEAL_TOKEN`.
+  **¿Olvidaste tu contraseña?** por usuario: enlace de un solo uso (1 hora) al
+  correo verificado, con el conector SMTP opcional (`SMTP_*`); sin él, el
+  superadministrador entrega el enlace desde /admin → Usuarios. **Mi cuenta**
+  cambia usuario, nombre, correo (y lo verifica) y contraseña. Bitácora de
+  acciones administrativas. El negocio principal ya no se puede borrar.
+  `SUPERADMIN_EMAILS` y `SUPERADMIN_SET_PASSWORD*` dejan de usarse: quítalas.
+  Migración `0028` aditiva.
 
 - **«Conectar con Meta» (Embedded Signup v4)** en Ajustes → WhatsApp (spec
   066). Con `META_APP_ID`, `META_EMBEDDED_CONFIG_ID` y `META_APP_SECRET` en la

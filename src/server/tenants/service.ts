@@ -6,7 +6,6 @@ import { getDb, schema } from "@/lib/db";
 import { newId } from "@/lib/db/ids";
 import { getEnv } from "@/lib/env";
 import { sembrarOrganizacion } from "@/server/auth/on-signup";
-import { esSuperadmin } from "@/server/tenants/superadmin";
 import { primaryOrgId, resetPrimaryOrgCache } from "@/server/tenants/primary";
 import { validarSlug, type SlugInvalido } from "@/lib/tenant-slug";
 
@@ -94,6 +93,7 @@ export async function miembrosDe(organizationId: string) {
       userId: schema.user.id,
       name: schema.user.name,
       email: schema.user.email,
+      username: schema.user.displayUsername,
     })
     .from(schema.member)
     .innerJoin(schema.user, eq(schema.member.userId, schema.user.id))
@@ -108,12 +108,12 @@ export async function miembrosDe(organizationId: string) {
 export type AltaTenant = {
   name: string;
   slug: string;
-  owner: { name: string; email: string; password: string };
+  owner: { name: string; email: string; password: string; username?: string };
 };
 
 export type ResultadoAlta =
   | { ok: true; organizationId: string; slug: string }
-  | { ok: false; motivo: SlugInvalido | "slug_ocupado" | "correo_ocupado" | "cuenta"; detalle?: string };
+  | { ok: false; motivo: SlugInvalido | "slug_ocupado" | "correo_ocupado" | "usuario_ocupado" | "cuenta"; detalle?: string };
 
 export async function crearTenant(input: AltaTenant): Promise<ResultadoAlta> {
   const v = validarSlug(input.slug);
@@ -129,6 +129,15 @@ export async function crearTenant(input: AltaTenant): Promise<ResultadoAlta> {
     .where(eq(schema.user.email, email))
     .limit(1);
   if (existente) return { ok: false, motivo: "correo_ocupado" };
+  const username = input.owner.username?.trim();
+  if (username) {
+    const [conUsuario] = await db
+      .select({ id: schema.user.id })
+      .from(schema.user)
+      .where(eq(schema.user.username, username.toLowerCase()))
+      .limit(1);
+    if (conUsuario) return { ok: false, motivo: "usuario_ocupado" };
+  }
 
   // La organización primero: el hook de alta de usuario (`onUserCreated`) solo
   // crea organización en una instancia vacía, y así nunca lo es.
@@ -151,7 +160,12 @@ export async function crearTenant(input: AltaTenant): Promise<ResultadoAlta> {
   try {
     const result = await runInternalSignup(() =>
       getAuth().api.signUpEmail({
-        body: { name: input.owner.name.trim(), email, password: input.owner.password },
+        body: {
+          name: input.owner.name.trim(),
+          email,
+          password: input.owner.password,
+          ...(username ? { username, displayUsername: username } : {}),
+        },
       })
     );
     userId = result.user.id;
@@ -209,7 +223,7 @@ export async function cambiarEstadoTenant(
 
 export type ResultadoBorrado =
   | { ok: true; usuariosBorrados: number; archivos: "borrados" | "sin_archivos" | "pendiente_bucket" }
-  | { ok: false; motivo: "no_encontrado" | "confirmacion" | "activo" | "propio" };
+  | { ok: false; motivo: "no_encontrado" | "confirmacion" | "activo" | "propio" | "principal" };
 
 /**
  * Borrado DEFINITIVO. Exige que el tenant esté suspendido (dos pasos a
@@ -235,6 +249,9 @@ export async function borrarTenant(
     .where(and(eq(schema.member.organizationId, id), eq(schema.member.userId, actor.userId)))
     .limit(1);
   if (propia) return { ok: false, motivo: "propio" };
+  // 068 — La principal no se borra: es la del cerebro del entorno y la de los
+  // prospectos de Sol (y el superadministrador ya no pertenece a ella).
+  if (id === (await primaryOrgId())) return { ok: false, motivo: "principal" };
 
   const usuariosBorrados = await db.transaction(async (tx) => {
     const miembros = await tx
@@ -246,11 +263,11 @@ export async function borrarTenant(
     if (ids.length === 0) return 0;
     // Quienes ya no pertenecen a ningún tenant.
     const huerfanos = await tx
-      .select({ id: schema.user.id, email: schema.user.email })
+      .select({ id: schema.user.id, role: schema.user.platformRole })
       .from(schema.user)
       .leftJoin(schema.member, eq(schema.member.userId, schema.user.id))
       .where(and(inArray(schema.user.id, ids), isNull(schema.member.id)));
-    const borrables = huerfanos.filter((u) => !esSuperadmin(u.email)).map((u) => u.id);
+    const borrables = huerfanos.filter((u) => u.role !== "superadmin").map((u) => u.id);
     if (borrables.length === 0) return 0;
     await tx.delete(schema.user).where(inArray(schema.user.id, borrables));
     return borrables.length;

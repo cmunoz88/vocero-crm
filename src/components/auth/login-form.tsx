@@ -24,7 +24,7 @@ export function LoginForm({
   mostrarRegistro?: boolean;
 }) {
   const router = useRouter();
-  const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(
     motivo === "suspendido"
@@ -37,13 +37,13 @@ export function LoginForm({
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error: err } = await signIn.email({ email, password });
+    const { error: err } = await signIn.username({ username: username.trim(), password });
     if (err) {
       setLoading(false);
       setError(
         err.status === 429
           ? "Demasiados intentos. Espera unos minutos."
-          : "Correo o contraseña incorrectos."
+          : "Usuario o contraseña incorrectos."
       );
       return;
     }
@@ -80,14 +80,15 @@ export function LoginForm({
       <CardContent>
         <form onSubmit={onSubmit} className="space-y-4">
           <div className="space-y-1.5">
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="username">Usuario</Label>
             <Input
-              id="email"
-              type="email"
-              autoComplete="email"
+              id="username"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
               required
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
             />
           </div>
           <div className="space-y-1.5">
@@ -109,6 +110,11 @@ export function LoginForm({
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? "Entrando…" : "Entrar"}
           </Button>
+          <p className="text-center text-sm">
+            <Link href="/olvide" className="text-primary hover:underline">
+              ¿Olvidaste tu contraseña?
+            </Link>
+          </p>
           {mostrarRegistro && (
             <p className="text-center text-sm text-muted-foreground">
               ¿Primera vez aquí?{" "}

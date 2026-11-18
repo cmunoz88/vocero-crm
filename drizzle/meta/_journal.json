@@ -197,6 +197,13 @@
       "when": 1794981727916,
       "tag": "0027_multi_tenant",
       "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1795023913388,
+      "tag": "0028_plataforma",
+      "breakpoints": true
     }
   ]
 }

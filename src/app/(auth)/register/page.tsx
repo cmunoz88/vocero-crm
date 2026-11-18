@@ -13,6 +13,7 @@ export default function RegisterPage() {
   const router = useRouter();
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,7 +22,7 @@ export default function RegisterPage() {
     e.preventDefault();
     setError(null);
     setLoading(true);
-    const { error: err } = await signUp.email({ name, email, password });
+    const { error: err } = await signUp.email({ name, email, password, username: username.trim() });
     setLoading(false);
     if (err) {
       if (err.status === 403) {
@@ -62,7 +63,21 @@ export default function RegisterPage() {
             />
           </div>
           <div className="space-y-1.5">
-            <Label htmlFor="email">Correo</Label>
+            <Label htmlFor="username">Usuario (con él entras)</Label>
+            <Input
+              id="username"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              required
+              pattern="[A-Za-z0-9_.]{3,30}"
+              title="3 a 30: letras, números, _ y ."
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="email">Correo (para recuperar tu contraseña)</Label>
             <Input
               id="email"
               type="email"

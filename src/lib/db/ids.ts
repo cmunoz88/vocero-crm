@@ -43,6 +43,9 @@ const prefixes = {
   conversationNote: "nota",
   // 067 — cerebro por tenant
   brainConnection: "brn",
+  // 068 — plataforma
+  auditLog: "aud",
+  oneTimeSecret: "ots",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

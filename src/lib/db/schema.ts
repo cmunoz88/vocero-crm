@@ -32,6 +32,12 @@ export const user = pgTable("user", {
   image: text("image"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at").notNull().defaultNow(),
+  /** 068 — Con lo que se entra (plugin `username`): en minúsculas, único. */
+  username: text("username").unique(),
+  /** 068 — El usuario tal como lo escribió (p. ej. «Optimus»). */
+  displayUsername: text("display_username"),
+  /** 068 — Rol global: `superadmin` o nada. Solo lo pone el arranque (Optimus). */
+  platformRole: text("platform_role", { enum: ["superadmin"] }),
 });
 
 export const session = pgTable("session", {
@@ -1437,3 +1443,40 @@ export const brainConnection = pgTable(
     uniqueIndex("brain_connection_key_hash_uq").on(t.keyHash),
   ]
 );
+
+/* ============================================================
+ * 068 — Plataforma (sin organization_id a propósito: son de la plataforma,
+ * como `user` y `session`, no de un negocio)
+ * ============================================================ */
+
+/** Bitácora de acciones administrativas. Nunca guarda secretos. */
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: text("id").primaryKey(),
+    actorUserId: text("actor_user_id"),
+    actorLabel: text("actor_label"),
+    action: text("action").notNull(),
+    organizationId: text("organization_id"),
+    targetType: text("target_type"),
+    targetId: text("target_id"),
+    detail: jsonb("detail").$type<Record<string, unknown>>(),
+    ip: text("ip"),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("audit_log_created_idx").on(t.createdAt), index("audit_log_org_idx").on(t.organizationId)]
+);
+
+/**
+ * Un secreto para ver UNA sola vez (la contraseña inicial de Optimus): cifrado
+ * con AES-256-GCM y borrado al mostrarse o al vencer.
+ */
+export const oneTimeSecret = pgTable("one_time_secret", {
+  id: text("id").primaryKey(),
+  purpose: text("purpose").notNull().unique(),
+  cipher: text("cipher").notNull(),
+  iv: text("iv").notNull(),
+  tag: text("tag").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});

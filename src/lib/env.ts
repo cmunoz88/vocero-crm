@@ -53,14 +53,25 @@ export const envSchema = z.object({
     .default("https://www.googleapis.com/calendar/v3"),
   GOOGLE_OAUTH_BASE_URL: z.string().url().default("https://oauth2.googleapis.com"),
   ALLOW_SIGNUP: z.string().optional(),
-  // 067 — Superusuarios de la plataforma (correos separados por coma): ven
-  // /admin para crear, suspender y borrar negocios. Sin ella, /admin no existe.
-  SUPERADMIN_EMAILS: z.string().optional(),
-  // 067 — Rescate de acceso: al arrancar, crea o restablece la cuenta de los
-  // superusuarios con esta contraseña (solo los de SUPERADMIN_SET_PASSWORD_FOR,
-  // si se define). Se quita después de entrar.
-  SUPERADMIN_SET_PASSWORD: z.string().optional(),
-  SUPERADMIN_SET_PASSWORD_FOR: z.string().optional(),
+  // 068 — El superadministrador (Optimus) se crea al arrancar si no hay uno.
+  // Su correo de recuperación; sin él no se crea (y se avisa en el log).
+  SUPERADMIN_RECOVERY_EMAIL: z.string().optional(),
+  // Nombre de usuario del superadministrador (por defecto «Optimus»).
+  SUPERADMIN_USERNAME: z.string().optional(),
+  // Llave para ver UNA vez la contraseña inicial en /setup/credenciales
+  // (32+ caracteres). Se quita después de verla.
+  SETUP_REVEAL_TOKEN: z.string().optional(),
+  // Rescate: con «true», al arrancar le genera una contraseña nueva al
+  // superadministrador (si no hay otra pendiente de ver). Se quita después.
+  SUPERADMIN_ROTATE_PASSWORD: z.string().optional(),
+  // 068 — Conector de correo opcional (SMTP: Gmail / Google Workspace con
+  // contraseña de aplicación, u otro). Apagado sin SMTP_HOST: la recuperación
+  // y las invitaciones se ofrecen como enlace copiable en /admin.
+  SMTP_HOST: z.string().optional(),
+  SMTP_PORT: z.coerce.number().int().positive().optional(),
+  SMTP_USER: z.string().optional(),
+  SMTP_PASS: z.string().optional(),
+  SMTP_FROM: z.string().optional(),
   AGENT_COALESCE_MS: z.coerce.number().int().min(0).default(6000),
   WA_MOCK_ENABLED: z.string().optional(),
   // API key de un cerebro externo que conduzca la conversación por /api/bot/*.

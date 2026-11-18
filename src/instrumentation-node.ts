@@ -1,4 +1,6 @@
-import { aplicarPasswordSuperadmin, hayCerebrosPorNegocio } from "@/server/tenants/bootstrap";
+import { hayCerebrosPorNegocio } from "@/server/tenants/bootstrap";
+import { asegurarSuperadmin } from "@/server/platform/optimus";
+import { asignarUsernamesFaltantes } from "@/server/platform/usernames";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import { mediaDirStatus } from "@/server/media-dir";
@@ -96,12 +98,21 @@ export async function encryptLegacySecrets(): Promise<void> {
  * mal configurado se dice aquí una vez, además de en la tarjeta «Quién
  * responde»: es el log que alguien mira cuando el agente no contesta.
  */
-/** 067 — `SUPERADMIN_SET_PASSWORD`: rescate de acceso. Nunca tumba el arranque. */
-export async function rescateSuperadmin(): Promise<void> {
+/**
+ * 068 — La plataforma: usuario para las cuentas de antes (entraban con correo)
+ * y el superadministrador (Optimus). Nunca tumba el arranque.
+ */
+export async function prepararPlataforma(): Promise<void> {
   try {
-    await aplicarPasswordSuperadmin();
+    const n = await asignarUsernamesFaltantes();
+    if (n > 0) console.log(`[boot] ${n} cuenta(s) recibieron su nombre de usuario`);
   } catch (err) {
-    console.error("[boot] rescate de superusuario falló:", err instanceof Error ? err.message : err);
+    console.error("[boot] no se pudieron asignar usuarios:", err instanceof Error ? err.message : err);
+  }
+  try {
+    await asegurarSuperadmin();
+  } catch (err) {
+    console.error("[boot] superadministrador:", err instanceof Error ? err.message : err);
   }
 }
 

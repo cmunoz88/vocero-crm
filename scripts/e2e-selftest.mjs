@@ -1003,7 +1003,12 @@ async function main() {
     (((await api("/api/conversations")).json?.conversations) ?? []).find(
       (c) => c.contact.phone === "524627008001"
     );
+  // La ingesta corre en segundo plano: se sondea en vez de dormir fijo.
   let conv008 = await findConv008();
+  for (let i = 0; !conv008 && i < 20; i++) {
+    await sleep(500);
+    conv008 = await findConv008();
+  }
   ok("conversación del lead 008 creada", Boolean(conv008), "sin conversación");
   const inboundAtBefore = conv008?.lastInboundAt;
 
@@ -1078,8 +1083,12 @@ async function main() {
       useMessagesKey: true,
     }),
   });
-  await sleep(700);
-  const msgs3 = (await api(`/api/conversations/${conv008.id}/messages`)).json?.messages ?? [];
+  let msgs3 = [];
+  for (let i = 0; i < 20; i++) {
+    await sleep(500);
+    msgs3 = (await api(`/api/conversations/${conv008.id}/messages`)).json?.messages ?? [];
+    if (msgs3.some((m) => m.text === "segundo mensaje manual")) break;
+  }
   ok(
     "echo bajo la clave `messages` también se ingiere (parser tolerante)",
     msgs3.some((m) => m.text === "segundo mensaje manual" && m.origin === "manual")

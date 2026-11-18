@@ -3,7 +3,7 @@ import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
 import { getSessionOrNull } from "@/lib/auth/session";
 import { resolveMembership } from "@/server/auth/on-signup";
-import { esSuperadmin } from "@/server/tenants/superadmin";
+import { esSuperadminUsuario } from "@/server/tenants/superadmin";
 import { aparienciaActual } from "@/server/apariencia";
 import { getBranding } from "@/server/branding";
 import { AppShell } from "@/components/app-shell";
@@ -21,7 +21,7 @@ export default async function AppLayout({
   const authSession = await getAuth().api.getSession({
     headers: await headers(),
   });
-  const superadmin = esSuperadmin(authSession?.user.email);
+  const superadmin = await esSuperadminUsuario(authSession?.user.id);
   if (!session) {
     // 067 — El superusuario no necesita pertenecer a un negocio: su casa es
     // /admin. Quien pertenece a uno suspendido lo ve dicho en el login.

@@ -8,18 +8,32 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 
-/** 067 — Mis datos (nombre y correo) y mi contraseña. */
-export function CuentaClient({ name, email }: { name: string; email: string }) {
+/** 067/068 — Mis datos (usuario, nombre y correo) y mi contraseña. */
+export function CuentaClient({
+  name,
+  email,
+  username,
+  emailVerificado,
+  correoDisponible,
+}: {
+  name: string;
+  email: string;
+  username: string;
+  emailVerificado: boolean;
+  correoDisponible: boolean;
+}) {
   return (
     <div className="space-y-6">
       <div>
         <h1 className="text-[26px] font-bold tracking-[-0.02em]">Mi cuenta</h1>
         <p className="text-sm text-text-3">
+          {username ? `@${username} · ` : ""}
           {name} · {email}
         </p>
       </div>
+      <UsuarioCard username={username} />
       <NombreCard name={name} />
-      <CorreoCard email={email} />
+      <CorreoCard email={email} verificado={emailVerificado} correoDisponible={correoDisponible} />
       <PasswordCard />
     </div>
   );
@@ -28,6 +42,61 @@ export function CuentaClient({ name, email }: { name: string; email: string }) {
 function Aviso({ msg }: { msg: { ok: boolean; text: string } | null }) {
   if (!msg) return null;
   return <p className={`text-sm ${msg.ok ? "text-success-text" : "text-destructive"}`}>{msg.text}</p>;
+}
+
+function UsuarioCard({ username }: { username: string }) {
+  const router = useRouter();
+  const [valor, setValor] = useState(username);
+  const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
+  const [saving, setSaving] = useState(false);
+  const limpio = valor.trim();
+
+  async function guardar(e: React.FormEvent) {
+    e.preventDefault();
+    setSaving(true);
+    setMsg(null);
+    const { error } = await authClient.updateUser({ username: limpio, displayUsername: limpio });
+    setSaving(false);
+    if (error) {
+      return setMsg({
+        ok: false,
+        text: /taken|exist/i.test(error.message ?? "")
+          ? "Ese usuario ya lo usa otra cuenta."
+          : "Usuario inválido: 3 a 30 letras, números, _ o punto.",
+      });
+    }
+    setMsg({ ok: true, text: `Usuario guardado ✓ Desde ahora entras con «${limpio}».` });
+    router.refresh();
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Usuario</CardTitle>
+        <CardDescription>Con él entras (no distingue mayúsculas).</CardDescription>
+      </CardHeader>
+      <CardContent>
+        <form onSubmit={guardar} className="max-w-sm space-y-4">
+          <div className="space-y-1.5">
+            <Label htmlFor="cuenta-usuario">Usuario</Label>
+            <Input
+              id="cuenta-usuario"
+              autoComplete="username"
+              autoCapitalize="none"
+              spellCheck={false}
+              maxLength={30}
+              value={valor}
+              onChange={(e) => setValor(e.target.value)}
+            />
+          </div>
+          <Aviso msg={msg} />
+          <Button type="submit" disabled={saving || !limpio || limpio === username}>
+            {saving ? "Guardando…" : "Guardar usuario"}
+          </Button>
+        </form>
+      </CardContent>
+    </Card>
+  );
 }
 
 function NombreCard({ name }: { name: string }) {
@@ -76,8 +145,28 @@ function NombreCard({ name }: { name: string }) {
   );
 }
 
-function CorreoCard({ email }: { email: string }) {
+function CorreoCard({
+  email,
+  verificado,
+  correoDisponible,
+}: {
+  email: string;
+  verificado: boolean;
+  correoDisponible: boolean;
+}) {
   const router = useRouter();
+  const [verif, setVerif] = useState<{ ok: boolean; text: string } | null>(null);
+
+  async function verificar() {
+    setVerif(null);
+    const res = await fetch("/api/cuenta/verificar-correo", { method: "POST" }).catch(() => null);
+    const data = (await res?.json().catch(() => null)) as { error?: { message?: string } } | null;
+    setVerif(
+      res?.ok
+        ? { ok: true, text: `Te mandamos un enlace a ${email}. Ábrelo para confirmar.` }
+        : { ok: false, text: data?.error?.message ?? "No se pudo enviar." }
+    );
+  }
   const [nuevo, setNuevo] = useState("");
   const [password, setPassword] = useState("");
   const [msg, setMsg] = useState<{ ok: boolean; text: string } | null>(null);
@@ -97,7 +186,7 @@ function CorreoCard({ email }: { email: string }) {
     if (!res?.ok) return setMsg({ ok: false, text: data?.error?.message ?? "No se pudo cambiar el correo." });
     setNuevo("");
     setPassword("");
-    setMsg({ ok: true, text: `Correo cambiado ✓ Desde ahora entras con ${data?.email ?? nuevo}.` });
+    setMsg({ ok: true, text: `Correo cambiado ✓ Ahora es ${data?.email ?? nuevo}; verifícalo para poder recuperar tu contraseña.` });
     router.refresh();
   }
 
@@ -106,10 +195,28 @@ function CorreoCard({ email }: { email: string }) {
       <CardHeader>
         <CardTitle>Correo</CardTitle>
         <CardDescription>
-          Es con el que entras. Ahora: <code>{email}</code>
+          Para recuperar tu contraseña. Ahora: <code>{email}</code>{" "}
+          {verificado ? (
+            <span className="text-success-text">· verificado ✓</span>
+          ) : (
+            <span className="text-destructive">· sin verificar</span>
+          )}
         </CardDescription>
       </CardHeader>
       <CardContent>
+        {!verificado && (
+          <div className="mb-5 space-y-2 rounded-lg border p-3 text-sm">
+            <p>Sin verificarlo no podrás recuperar tu contraseña por correo.</p>
+            {correoDisponible ? (
+              <Button type="button" variant="outline" size="sm" onClick={verificar}>
+                Enviarme el enlace de verificación
+              </Button>
+            ) : (
+              <p className="text-muted-foreground">Esta instalación todavía no envía correos.</p>
+            )}
+            <Aviso msg={verif} />
+          </div>
+        )}
         <form onSubmit={cambiar} className="max-w-sm space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="cuenta-correo">Correo nuevo</Label>

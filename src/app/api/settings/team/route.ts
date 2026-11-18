@@ -17,6 +17,7 @@ export const GET = withAuth(async (session) => {
       createdAt: schema.member.createdAt,
       name: schema.user.name,
       email: schema.user.email,
+      username: schema.user.displayUsername,
     })
     .from(schema.member)
     .innerJoin(schema.user, eq(schema.member.userId, schema.user.id))
@@ -27,6 +28,7 @@ export const GET = withAuth(async (session) => {
       role: m.role,
       name: m.name,
       email: m.email,
+      username: m.username,
       createdAt: m.createdAt.toISOString(),
     })),
   });
@@ -35,6 +37,7 @@ export const GET = withAuth(async (session) => {
 const createSchema = z.object({
   name: z.string().trim().min(1).max(120),
   email: z.string().trim().email(),
+  username: z.string().trim().regex(/^[a-zA-Z0-9_.]{3,30}$/).optional(),
   password: z.string().min(8).max(128),
 });
 
@@ -55,6 +58,7 @@ export const POST = withAuth(async (session, req: Request) => {
           name: body.data.name,
           email: body.data.email,
           password: body.data.password,
+          ...(body.data.username ? { username: body.data.username, displayUsername: body.data.username } : {}),
         },
       })
     );
@@ -62,6 +66,9 @@ export const POST = withAuth(async (session, req: Request) => {
   } catch (err) {
     const message =
       err instanceof Error ? err.message : "No se pudo crear la cuenta";
+    if (/username/i.test(message)) {
+      return apiError(409, "duplicate", "Ese nombre de usuario ya lo usa otra cuenta");
+    }
     if (/exist/i.test(message)) {
       return apiError(409, "duplicate", "Ya existe una cuenta con ese correo");
     }

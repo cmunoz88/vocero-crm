@@ -7,7 +7,7 @@ import { getBranding } from "@/server/branding";
 import { BrandLogo } from "@/components/brand-mark";
 import { SalirButton } from "@/components/admin/salir-button";
 import { getSessionOrNull } from "@/lib/auth/session";
-import { esSuperadmin } from "@/server/tenants/superadmin";
+import { esSuperadminUsuario } from "@/server/tenants/superadmin";
 
 export const dynamic = "force-dynamic";
 
@@ -24,7 +24,7 @@ export default async function CuentaLayout({ children }: { children: React.React
     getBranding().catch(() => DEFAULT_BRANDING),
     getSessionOrNull(),
   ]);
-  const superadmin = esSuperadmin(session.user.email);
+  const superadmin = await esSuperadminUsuario(session.user.id);
   return (
     <div className="min-h-screen bg-subtle">
       <header className="border-b bg-background">

@@ -16,6 +16,7 @@ const altaSchema = z.object({
   owner: z.object({
     name: z.string().trim().min(1).max(120),
     email: z.string().trim().email(),
+    username: z.string().trim().regex(/^[a-zA-Z0-9_.]{3,30}$/).optional(),
     password: z.string().min(8).max(128),
   }),
 });
@@ -26,6 +27,6 @@ export const POST = withSuperadmin(async (_admin, req: Request) => {
   if (!body.ok) return body.response;
   const r = await crearTenant(body.data);
   if (r.ok) return Response.json(r, { status: 201 });
-  const status = r.motivo === "slug_ocupado" || r.motivo === "correo_ocupado" ? 409 : 422;
+  const status = r.motivo === "slug_ocupado" || r.motivo === "correo_ocupado" || r.motivo === "usuario_ocupado" ? 409 : 422;
   return apiError(status, r.motivo, MENSAJES_SLUG[r.motivo] ?? r.detalle ?? "No se pudo crear la cuenta del dueño");
 });

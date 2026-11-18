@@ -8,7 +8,8 @@
  *        APP_BASE_URL, DATABASE_URL, WA_MOCK_ENABLED=true, META_GRAPH_BASE_URL
  *        → wa-mock, OPENROUTER_* → ai-mock, AGENT_COALESCE_MS=1500,
  *        BOT_API_KEY (16+), BRAIN_DISPATCH_URL=http://127.0.0.1:3261/vocero/dispatch,
- *        SUPERADMIN_EMAILS=super@principal.test, MEDIA_DIR
+ *        SUPERADMIN_RECOVERY_EMAIL, SETUP_REVEAL_TOKEN (32+), SMTP_HOST=mock, MEDIA_DIR
+ *      (068: el superadministrador es Optimus; su contraseña se lee UNA vez)
  *   2) node --env-file=.env.e2e-067 scripts/e2e-multi-tenant.mjs
  *
  * Cubre los criterios CA-1…CA-8 de specs/067-multi-tenant/spec.md. Sale con
@@ -21,7 +22,8 @@ import { encenderAgente, levantarCerebroFalso } from "./lib/cerebro-falso.mjs";
 
 const BASE = process.env.APP_BASE_URL ?? "http://localhost:3000";
 const ENV_KEY = process.env.BOT_API_KEY;
-const SUPER = { email: "super@principal.test", password: "password-super-123", name: "Super Admin" };
+const SUPER = { email: "super@principal.test", password: "password-super-123", name: "Dueño Principal" };
+const OPTIMUS = { username: "Optimus", password: "" };
 const sql = postgres(process.env.DATABASE_URL, { max: 2 });
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const RUN = Date.now().toString(36);
@@ -66,6 +68,8 @@ function sesion() {
     },
     entrar: (email, password) =>
       api("/api/auth/sign-in/email", { method: "POST", body: JSON.stringify({ email, password }) }),
+    entrarUsuario: (username, password) =>
+      api("/api/auth/sign-in/username", { method: "POST", body: JSON.stringify({ username, password }) }),
   };
 }
 
@@ -105,11 +109,21 @@ async function main() {
   }
 
   // ---------------------------------------------------------------------
-  console.log("\n== Arranque: la organización principal y su superusuario ==");
+  console.log("\n== Arranque: la organización principal y el superadministrador (Optimus) ==");
+  const dp = sesion();
+  let r = await dp.api("/api/auth/sign-up/email", { method: "POST", body: JSON.stringify(SUPER) });
+  if (!r.res.ok) r = await dp.entrar(SUPER.email, SUPER.password);
+  ok("el dueño de la principal entra (primer registro = organización principal)", r.res.ok, r.json);
+  r = await sesion().api("/api/setup/credenciales", {
+    method: "POST",
+    body: JSON.stringify({ token: process.env.SETUP_REVEAL_TOKEN }),
+  });
+  ok("la contraseña de Optimus se lee una vez (base limpia)", r.status === 200 && r.json?.username === "Optimus", r.json?.error);
+  OPTIMUS.password = r.json?.password ?? "";
   const su = sesion();
-  let r = await su.api("/api/auth/sign-up/email", { method: "POST", body: JSON.stringify(SUPER) });
-  if (!r.res.ok) r = await su.entrar(SUPER.email, SUPER.password);
-  ok("el superusuario entra (primer registro = organización principal)", r.res.ok, r.json);
+  r = await su.entrarUsuario("optimus", OPTIMUS.password);
+  ok("Optimus entra con su usuario (sin distinguir mayúsculas)", r.res.ok, r.json);
+  ok("el dueño de la principal NO ve /api/admin (404)", (await dp.api("/api/admin/tenants")).status === 404);
   const [principal] = await sql`select id, slug from organization order by created_at, id limit 1`;
   ok("la principal existe y está activa", Boolean(principal));
 
@@ -138,7 +152,11 @@ async function main() {
   const alta = (slug, email, name = "Negocio") =>
     su.api("/api/admin/tenants", {
       method: "POST",
-      body: JSON.stringify({ name, slug, owner: { name: `Dueño ${slug}`, email, password: "password-dueno-1" } }),
+      body: JSON.stringify({
+        name,
+        slug,
+        owner: { name: `Dueño ${slug}`, email, username: `d_${slug.replace(/[^a-z0-9]/g, "")}`.slice(0, 30), password: "password-dueno-1" },
+      }),
     });
   r = await alta("A B", `bad${RUN}@t.test`);
   ok("web ID con espacio → 422", r.status === 422, r.json);
@@ -342,10 +360,10 @@ async function main() {
   ok("B intacto", (await b.api("/api/conversations")).json?.conversations?.length === 1);
   ok("/t/{slug de A} → 404", (await anon.api(`/t/${A.slug}/login`)).status === 404);
 
-  // El superusuario no se puede borrar a sí mismo.
+  // 068 — La principal no se borra (cerebro del entorno, prospectos de Sol).
   await su.api(`/api/admin/tenants/${principal.id}`, { method: "PATCH", body: JSON.stringify({ status: "suspended" }) });
   r = await del(principal.id, principal.slug ?? principal.id);
-  ok("no se puede borrar el negocio propio → 409", r.status === 409 && r.json?.error?.code === "propio", r.json);
+  ok("no se puede borrar el negocio principal → 409", r.status === 409 && r.json?.error?.code === "principal", r.json);
   ok("con la principal suspendida, /admin sigue abierto para el superusuario", (await su.api("/api/admin/tenants")).status === 200);
   await su.api(`/api/admin/tenants/${principal.id}`, { method: "PATCH", body: JSON.stringify({ status: "active" }) });
 
@@ -374,13 +392,13 @@ async function navegador(B) {
     const ctx = await browser.newContext({ baseURL: BASE });
     const page = await ctx.newPage();
     await page.goto("/login");
-    await page.fill("#email", SUPER.email);
-    await page.fill("#password", SUPER.password);
+    await page.fill("#username", "OPTIMUS");
+    await page.fill("#password", OPTIMUS.password);
     await page.click("button[type=submit]");
     await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20000 });
     await page.goto("/inbox");
-    ok("el menú del superusuario trae «Negocios»", await page.getByRole("link", { name: "Negocios" }).first().isVisible());
-    await page.goto("/admin");
+    await page.waitForURL((u) => u.pathname === "/admin", { timeout: 20000 });
+    ok("Optimus (sin negocio) cae en /admin, con «Negocios» y «Usuarios»", await page.getByRole("link", { name: "Usuarios" }).first().isVisible());
     await page.getByRole("button", { name: "Nuevo negocio" }).click();
     const slug = `ui-${RUN}`;
     await page.fill("#t-name", "Ferretería Ñandú");
@@ -388,6 +406,7 @@ async function navegador(B) {
     await page.fill("#t-slug", slug);
     await page.fill("#o-name", "Dueña UI");
     await page.fill("#o-email", `duena@${slug}.test`);
+    await page.fill("#o-user", `duena_${RUN}`);
     await page.getByRole("button", { name: "Generar" }).click();
     const pass = await page.inputValue("#o-pass");
     await page.getByRole("button", { name: "Crear negocio" }).click();
@@ -416,14 +435,14 @@ async function navegador(B) {
     const p2 = await ctx2.newPage();
     await p2.goto(`/t/${B.slug}/login`);
     ok("el login del negocio muestra su nombre", await p2.getByRole("heading", { name: B.name }).isVisible());
-    await p2.fill("#email", SUPER.email);
+    await p2.fill("#username", SUPER.email.split("@")[0]);
     await p2.fill("#password", SUPER.password);
     await p2.click("button[type=submit]");
     // Next agrega su propio role=alert (el anunciador de rutas): se busca el texto.
     const aviso = p2.getByText(`Esta cuenta no pertenece a ${B.name}.`);
     ok("una cuenta de otro negocio no entra, y se dice", await aviso.waitFor({ timeout: 15000 }).then(() => true).catch(() => false));
     ok("…y la sesión de esa cuenta se cerró", !p2.url().includes("/inbox"));
-    await p2.fill("#email", B.email);
+    await p2.fill("#username", `d_${B.slug.replace(/[^a-z0-9]/g, "")}`.slice(0, 30));
     await p2.fill("#password", "password-dueno-1");
     await p2.click("button[type=submit]");
     await p2.waitForURL((u) => !u.pathname.includes("/login"), { timeout: 20000 });

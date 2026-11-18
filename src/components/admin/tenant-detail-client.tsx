@@ -11,7 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import type { TenantRow } from "@/components/admin/tenants-client";
 
-type Member = { id: string; role: string; name: string; email: string; createdAt: string };
+type Member = { id: string; role: string; name: string; email: string; username?: string | null; createdAt: string };
 type Brain = {
   dispatchUrl: string | null;
   healthUrl: string | null;
@@ -293,7 +293,11 @@ function CuentasCard({ members }: { members: Member[] }) {
           <div key={m.id} className="flex items-center gap-3 rounded-md border px-3 py-2">
             <div className="min-w-0 flex-1">
               <p className="truncate text-sm font-medium">{m.name}</p>
-              <p className="truncate text-xs text-text-3">{m.email}</p>
+              <p className="truncate text-xs text-text-3">
+                {m.username ? <span className="font-mono">@{m.username}</span> : null}
+                {m.username ? " · " : ""}
+                {m.email}
+              </p>
             </div>
             <Badge variant={m.role === "owner" ? "default" : "secondary"}>
               {m.role === "owner" ? "Dueño" : "Equipo"}

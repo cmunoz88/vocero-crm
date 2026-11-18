@@ -126,10 +126,11 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
   const [slugTocado, setSlugTocado] = useState(false);
   const [ownerName, setOwnerName] = useState("");
   const [ownerEmail, setOwnerEmail] = useState("");
+  const [ownerUser, setOwnerUser] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [creado, setCreado] = useState<{ slug: string; email: string; password: string } | null>(null);
+  const [creado, setCreado] = useState<{ slug: string; username: string; password: string } | null>(null);
 
   const slugEfectivo = slugTocado ? slug : sugerirSlug(name);
   const slugOk = slugEfectivo ? validarSlug(slugEfectivo) : null;
@@ -143,7 +144,7 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
       body: JSON.stringify({
         name,
         slug: slugEfectivo,
-        owner: { name: ownerName, email: ownerEmail, password },
+        owner: { name: ownerName, email: ownerEmail, username: ownerUser.trim(), password },
       }),
     }).catch(() => null);
     setSaving(false);
@@ -152,7 +153,7 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
       return;
     }
     const data = (await res.json()) as { slug: string };
-    setCreado({ slug: data.slug, email: ownerEmail, password });
+    setCreado({ slug: data.slug, username: ownerUser.trim(), password });
     onCreated();
   }
 
@@ -170,8 +171,8 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
           <dl className="grid gap-2 rounded-md border bg-subtle p-3 sm:grid-cols-[120px_1fr]">
             <dt className="text-text-3">Entrada</dt>
             <dd className="break-all font-mono">{url}</dd>
-            <dt className="text-text-3">Correo</dt>
-            <dd className="font-mono">{creado.email}</dd>
+            <dt className="text-text-3">Usuario</dt>
+            <dd className="font-mono">{creado.username}</dd>
             <dt className="text-text-3">Contraseña</dt>
             <dd className="font-mono">{creado.password}</dd>
           </dl>
@@ -180,7 +181,7 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
               variant="outline"
               onClick={() =>
                 void navigator.clipboard?.writeText(
-                  `Entrada: ${url}\nCorreo: ${creado.email}\nContraseña temporal: ${creado.password}`
+                  `Entrada: ${url}\nUsuario: ${creado.username}\nContraseña temporal: ${creado.password}`
                 )
               }
             >
@@ -246,9 +247,23 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
               <Input id="o-name" value={ownerName} onChange={(e) => setOwnerName(e.target.value)} />
             </div>
             <div className="space-y-1.5">
-              <Label htmlFor="o-email">Correo</Label>
+              <Label htmlFor="o-email">Correo (recuperación)</Label>
               <Input id="o-email" type="email" value={ownerEmail} onChange={(e) => setOwnerEmail(e.target.value)} />
             </div>
+          </div>
+          <div className="space-y-1.5">
+            <Label htmlFor="o-user">Usuario (con él entra)</Label>
+            <Input
+              id="o-user"
+              autoCapitalize="none"
+              spellCheck={false}
+              value={ownerUser}
+              onChange={(e) => setOwnerUser(e.target.value)}
+              placeholder="lupita"
+            />
+            {ownerUser && !/^[a-zA-Z0-9_.]{3,30}$/.test(ownerUser.trim()) && (
+              <p className="text-xs text-destructive">3 a 30: letras, números, _ y punto.</p>
+            )}
           </div>
           <div className="space-y-1.5">
             <Label htmlFor="o-pass">Contraseña temporal</Label>
@@ -277,6 +292,7 @@ function AltaTenant({ onCancel, onCreated }: { onCancel: () => void; onCreated: 
             !slugOk?.ok ||
             !ownerName.trim() ||
             !ownerEmail.trim() ||
+            !/^[a-zA-Z0-9_.]{3,30}$/.test(ownerUser.trim()) ||
             password.length < 8
           }
           onClick={() => void crear()}
