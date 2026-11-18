@@ -59,6 +59,10 @@ vi.mock("@/lib/auth/session", () => ({
 import { despacharAlCerebro } from "@/server/dispatch/encolar";
 import { PUT } from "@/app/api/agent/profile/route";
 
+// 067 — Sin base: el cerebro de cualquier tenant sale del entorno, como antes.
+vi.mock("@/server/brains/por-org", () => import("../fixtures/por-org-entorno"));
+
+
 const CONV_ABIERTA = { aiEnabled: true, handoffAt: null, isTest: false };
 
 beforeEach(() => {

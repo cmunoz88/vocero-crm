@@ -1,3 +1,5 @@
+import { eq } from "drizzle-orm";
+import { getDb, schema } from "@/lib/db";
 import type { WebhookPayload } from "@/server/inbox/webhook";
 import {
   getCredentialsByPhoneNumberId,
@@ -29,17 +31,30 @@ export type Buscadores = {
   porCuentaZernio: (evt: ZernioEvent) => Promise<{ organizationId: string } | null>;
 };
 
+/**
+ * 067 — Un tenant suspendido no recibe: su evento se resuelve a «nadie», así
+ * que no se guarda ni se ingiere, y Meta recibe su 200 igual (no reintenta).
+ */
+async function activa(organizationId: string): Promise<boolean> {
+  const [org] = await getDb()
+    .select({ status: schema.organization.status })
+    .from(schema.organization)
+    .where(eq(schema.organization.id, organizationId))
+    .limit(1);
+  return org?.status === "active";
+}
+
 const buscadoresReales: Buscadores = {
   porPhoneNumberId: getCredentialsByPhoneNumberId,
   porWabaId: getCredentialsByWabaId,
   porIgUserId: getInstagramCredentialsByIgUserId,
   porPageId: getMessengerCredentialsByPageId,
-  porCuentaZernio: async (evt) => {
+  porCuentaZernio: (async (evt: ZernioEvent) => {
     const canal = zernioTargetChannel(evt);
     if (!canal) return null;
     const found = await findZernioConnection(canal, evt.account);
     return found ? { organizationId: found.connection.organizationId } : null;
-  },
+  }),
 };
 
 /** La primera organización que se resuelva: una entrega trae una sola cuenta. */
@@ -52,6 +67,24 @@ async function primera(
     if (found) return found.organizationId;
   }
   return null;
+}
+
+/**
+ * 067 — A quién va el evento Y si ese negocio puede recibirlo. Un negocio
+ * suspendido no recibe: la ruta responde 200 (Meta no reintenta) y el evento
+ * se descarta sin guardarse ni ingerirse. Distinto de «nadie conectó ese
+ * número», que sigue el camino de siempre.
+ */
+export async function resolverDestino(
+  fuente: FuenteWebhook,
+  payload: unknown,
+  b: Buscadores = buscadoresReales,
+  esActiva: (organizationId: string) => Promise<boolean> = activa
+): Promise<{ organizationId: string | null; suspendida: boolean }> {
+  const organizationId = await resolverOrganizacion(fuente, payload, b);
+  if (!organizationId) return { organizationId: null, suspendida: false };
+  if (await esActiva(organizationId)) return { organizationId, suspendida: false };
+  return { organizationId: null, suspendida: true };
 }
 
 export async function resolverOrganizacion(

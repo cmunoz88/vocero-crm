@@ -1,3 +1,4 @@
+import { orgDeContexto } from "@/server/tenants/contexto";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
 import {
@@ -31,6 +32,8 @@ export async function getBrandingContext(
   organizationId?: string | null
 ): Promise<{ organizationId: string | null; branding: Branding }> {
   const db = getDb();
+  // 067 — Sin id: el negocio del contexto (ruta /t/{slug}, sesión o el principal).
+  organizationId ??= await orgDeContexto();
   const rows = organizationId
     ? await db
         .select({ id: schema.organization.id, metadata: schema.organization.metadata })

@@ -6,7 +6,7 @@ modificación viven ahí; este archivo solo añade lo específico de Claude Code
 Vocero es un CRM de WhatsApp open source (MIT), self-hosted, con el perfil y el
 conocimiento del agente y un Laboratorio de auto-evaluación. Desde la 2.0 no
 trae agente: contesta un cerebro conectado al lado (Nea u otro). Una
-instancia = un negocio. Este archivo guía a Claude Code (u otro asistente)
+instancia = un negocio (o varios con `SUPERADMIN_EMAILS` y `/admin`, spec 067). Este archivo guía a Claude Code (u otro asistente)
 para operar y **modificar** este repositorio —
 el caso típico: una agencia adaptando Vocero para un cliente.
 
@@ -43,7 +43,8 @@ es in-process.
 | Campos/tablas | `src/lib/db/schema.ts` → `pnpm db:generate` → migración nueva en `drizzle/` |
 | La ingesta/envío de mensajes | `src/server/inbox/` (ingest idempotente, send con guard de sandbox, ventana 24h) |
 | Cómo se identifica a un contacto | `src/server/inbox/identity.ts` (teléfono normalizado o `bsuid:<id>`) |
-| Conectar el cerebro (Nea o el tuyo) | despacho: `src/server/dispatch/encolar.ts` (`despacharAlCerebro`) + `src/server/brains/` (`config.ts`: `despachoActivo`, `urlSaludCerebro`) · `src/app/api/bot/*` + `src/server/bot/auth.ts` (X-API-Key o Bearer) · contrato en `docs/openapi.json` · quién responde (avisos `sin_cerebro`, `apagado`): `src/server/bot/status.ts` + `GET /api/agent/brain-status` |
+| Conectar el cerebro (Nea o el tuyo) | despacho: `src/server/dispatch/encolar.ts` (`despacharAlCerebro`) + `src/server/brains/` (`config.ts`: reglas; `por-org.ts`: el cerebro de cada negocio, `configDespachoDeOrg`) · `src/app/api/bot/*` + `src/server/bot/auth.ts` (X-API-Key o Bearer) · contrato en `docs/openapi.json` · quién responde (avisos `sin_cerebro`, `apagado`): `src/server/bot/status.ts` + `GET /api/agent/brain-status` |
+| Los negocios (multi-tenant: alta, suspensión, borrado, web ID, cerebro por negocio; spec 067) | `src/server/tenants/` (`superadmin.ts`: `SUPERADMIN_EMAILS` · `service.ts`: alta/suspensión/borrado · `contexto.ts`: el negocio de la ruta `/t/{slug}` o de la sesión · `primary.ts`: la organización principal) · `src/lib/tenant-slug.ts` (web ID) · `src/server/brains/por-org.ts` (cerebro por negocio y llave → negocio) · API `src/app/api/admin/*` · UI `src/app/admin/` + `src/components/admin/` · login por web ID `src/app/t/[slug]/` |
 | La agenda (horarios, huecos, citas) | `src/server/agenda/` — detrás de la bandera `AGENDA` (`flag.ts`) |
 | Cómo se entrega la reunión (Zoom, Meet…) | `src/server/agenda/connectors/` + catálogo en `src/lib/agenda-connectors.ts` · guía: [docs/agenda-conectores.md](docs/agenda-conectores.md) |
 | De qué anuncio llegó cada conversación (siempre visible) | `src/server/attribution/referral.ts` (normalización) · `creativo.ts` (copia de la imagen, solo hosts de Meta) · `store.ts` · tarjeta en `src/components/anuncio-origen.tsx` |

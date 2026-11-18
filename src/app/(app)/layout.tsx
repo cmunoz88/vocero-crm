@@ -2,6 +2,8 @@ import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { getAuth } from "@/lib/auth";
 import { getSessionOrNull } from "@/lib/auth/session";
+import { resolveMembership } from "@/server/auth/on-signup";
+import { esSuperadmin } from "@/server/tenants/superadmin";
 import { aparienciaActual } from "@/server/apariencia";
 import { getBranding } from "@/server/branding";
 import { AppShell } from "@/components/app-shell";
@@ -16,11 +18,21 @@ export default async function AppLayout({
   children,
 }: Readonly<{ children: React.ReactNode }>) {
   const session = await getSessionOrNull();
-  if (!session) redirect("/login");
-  const branding = await getBranding(session.organizationId);
   const authSession = await getAuth().api.getSession({
     headers: await headers(),
   });
+  const superadmin = esSuperadmin(authSession?.user.email);
+  if (!session) {
+    // 067 — El superusuario no necesita pertenecer a un negocio: su casa es
+    // /admin. Quien pertenece a uno suspendido lo ve dicho en el login.
+    if (superadmin) redirect("/admin");
+    if (authSession) {
+      const m = await resolveMembership(authSession.user.id);
+      if (m?.orgStatus === "suspended") redirect("/login?motivo=suspendido");
+    }
+    redirect("/login");
+  }
+  const branding = await getBranding(session.organizationId);
   // 062 — Para el botón de sol y luna: salta a la pareja del tema actual.
   const { apariencia } = await aparienciaActual(session.organizationId);
   // El agente encendido y sin con qué pensar se ve desde fuera igual que un
@@ -42,6 +54,7 @@ export default async function AppLayout({
       // prop, igual que los canales de la Bandeja. El nav es un componente de
       // cliente: no puede —ni debe— leer variables de entorno.
       agenda={agendaEnabled()}
+      superadmin={superadmin}
       kicker={navKicker([...enabledChannels()])}
       aviso={<AvisoIaBanner aviso={aviso} />}
     >

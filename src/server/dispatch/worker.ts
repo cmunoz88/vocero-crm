@@ -1,6 +1,6 @@
 import { and, eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
-import { leerConfigDespacho } from "@/server/brains/config";
+import { configDespachoDeOrg } from "@/server/brains/por-org";
 import {
   construirEvento,
   entregar,
@@ -151,7 +151,17 @@ export async function tanda(ahora: Date = new Date()): Promise<number> {
 }
 
 async function procesar(fila: FilaDespacho): Promise<void> {
-  const config = leerConfigDespacho();
+  // 067 — El cerebro es del tenant de la fila; un tenant suspendido no despacha.
+  const [org] = await getDb()
+    .select({ status: schema.organization.status })
+    .from(schema.organization)
+    .where(eq(schema.organization.id, fila.organizationId))
+    .limit(1);
+  if (org?.status !== "active") {
+    await descartarDespacho(fila, "el negocio está suspendido");
+    return;
+  }
+  const config = await configDespachoDeOrg(fila.organizationId);
   if (!config.active) {
     // Quedó de antes de que se quitara o se rompiera la configuración: ya no
     // hay a quién entregarlo, y el agente incluido vuelve a ser quien manda.

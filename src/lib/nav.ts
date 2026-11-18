@@ -1,4 +1,5 @@
 import {
+  Building2,
   CalendarDays,
   ChartColumn,
   FlaskConical,
@@ -50,9 +51,12 @@ export const SETTINGS_ITEM: NavItem = {
 export function appNavGroups({
   agenda = false,
   role,
+  superadmin = false,
 }: {
   /** 015 — "Citas" solo existe si esta instancia encendió la agenda. */
   agenda?: boolean;
+  /** 067 — «Negocios» (/admin) solo para el superusuario. */
+  superadmin?: boolean;
   /** #86 — La guía de inicio solo para quien puede configurar. */
   role?: string | null;
 }): NavGroup[] {
@@ -75,12 +79,16 @@ export function appNavGroups({
     { href: "/lab", label: "Laboratorio", icon: FlaskConical }
   );
 
-  return [
+  const groups: NavGroup[] = [
     { title: "Trabajo", items: trabajo },
     { title: "Agente", items: agente },
     // 019 — Se mide al final: primero se atiende y se organiza.
     { items: [{ href: "/results", label: "Resultados", icon: ChartColumn }] },
   ];
+  if (superadmin) {
+    groups.push({ title: "Plataforma", items: [{ href: "/admin", label: "Negocios", icon: Building2 }] });
+  }
+  return groups;
 }
 
 export type SettingsLink = { href: string; label: string };

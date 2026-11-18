@@ -22,6 +22,10 @@ vi.mock("@/server/bot/status", () => ({ getBrainHealth }));
 import { onboardingStatus } from "@/server/onboarding/status";
 import { verifyCalendar, hasWeeklyHours } from "@/server/onboarding/calendar-verifiers";
 
+// 067 — Sin base: el cerebro de cualquier tenant sale del entorno, como antes.
+vi.mock("@/server/brains/por-org", () => import("../fixtures/por-org-entorno"));
+
+
 // Identidades REALES de las tablas; solo se reemplaza el transporte.
 const rows = new Map<unknown, unknown[]>();
 const db = {

@@ -3,7 +3,7 @@ import { scoped } from "@/lib/db/tenant";
 import { estadoIaDe, mensajeDeEstado } from "@/lib/ai/provider";
 import { agendaEnabled } from "@/server/agenda/flag";
 import { verifyCalendar } from "./calendar-verifiers";
-import { leerConfigDespacho, urlSaludCerebro } from "@/server/brains/config";
+import { configDespachoDeOrg, urlSaludCerebroDeOrg } from "@/server/brains/por-org";
 import { getBrainHealth } from "@/server/bot/status";
 
 /**
@@ -111,7 +111,7 @@ export async function onboardingStatus(
           ? "Meta dejó de aceptar el token de WhatsApp: vuelve a conectar el número."
           : null,
     },
-    await pasoCerebro(),
+    await pasoCerebro(organizationId),
   ];
 
   if (agendaEnabled()) {
@@ -143,9 +143,9 @@ type Perfil = { name: string; instructions: string | null; enabled: boolean };
  * que llevar: dice qué falta y lleva a la guía. Listo cuando el despacho está
  * configurado y el `/health` del cerebro contesta.
  */
-async function pasoCerebro(): Promise<ReadinessStep> {
+async function pasoCerebro(organizationId: string): Promise<ReadinessStep> {
   const base = { key: "brain" as const, label: "Tu agente", href: null };
-  const despacho = leerConfigDespacho();
+  const despacho = await configDespachoDeOrg(organizationId);
   if (!despacho.active) {
     return {
       ...base,
@@ -160,7 +160,7 @@ async function pasoCerebro(): Promise<ReadinessStep> {
             : null,
     };
   }
-  const salud = await getBrainHealth(urlSaludCerebro() ?? undefined);
+  const salud = await getBrainHealth((await urlSaludCerebroDeOrg(organizationId)) ?? undefined);
   if (salud && !salud.reachable) {
     return {
       ...base,

@@ -1,8 +1,8 @@
-import { timingSafeEqual } from "node:crypto";
-import { getDb, schema } from "@/lib/db";
 import { apiError } from "@/lib/api";
 import { checkRateLimit, clientIp } from "@/lib/rate-limit";
 import { markBotSeen } from "@/server/bot/status";
+import { orgDeLlave } from "@/server/brains/por-org";
+import { primaryOrgId, resetPrimaryOrgCache } from "@/server/tenants/primary";
 
 /**
  * Autenticación de la API de servicio `/api/bot/*`.
@@ -59,49 +59,54 @@ function llaveDe(req: Request): string | null {
   return m?.[1] ?? null;
 }
 
-export function requireBotKey(req: Request): Response | null {
-  if (!validBotKey(llaveDe(req))) {
+/**
+ * 067 — La llave dice de QUÉ tenant es la llamada: cada uno tiene la suya
+ * (`brain_connection`), y `BOT_API_KEY` del entorno vale para la organización
+ * principal. Un tenant suspendido no autentica. El tenant resuelto queda
+ * asociado al `Request` para `resolveInstanceOrg(req)`.
+ */
+const orgPorRequest = new WeakMap<Request, string>();
+
+export async function requireBotKey(
+  req: Request,
+  resolver: (llave: string | null) => Promise<string | null> = orgDeLlave
+): Promise<Response | null> {
+  let organizationId: string | null = null;
+  try {
+    organizationId = await resolver(llaveDe(req));
+  } catch (err) {
+    console.error("[bot] no se pudo resolver la llave:", err);
+    return apiError(503, "unavailable", "No se pudo validar la llave");
+  }
+  if (!organizationId) {
     const ip = clientIp(req.headers);
     const fails = checkRateLimit(`bot-api-fail:${ip}`, BOT_AUTH_FAILURES);
     return fails.allowed
       ? apiError(401, "unauthorized", "No autorizado")
       : apiError(429, "rate_limited", "Demasiados intentos fallidos");
   }
+  orgPorRequest.set(req, organizationId);
   // «Quién responde»: la única huella que deja el cerebro externo en el CRM.
   // Se marca al autenticar, antes del presupuesto: un cerebro frenado por 429
   // sigue siendo el que contesta.
-  markBotSeen();
-  const rl = checkRateLimit("bot-api", BOT_API_BUDGET);
+  markBotSeen(organizationId);
+  // Un presupuesto por tenant: el cerebro desbocado de uno no frena a otro.
+  const rl = checkRateLimit(`bot-api:${organizationId}`, BOT_API_BUDGET);
   if (!rl.allowed) return apiError(429, "rate_limited", "Demasiadas solicitudes");
   return null;
 }
 
-function validBotKey(provided: string | null): boolean {
-  const expected = process.env.BOT_API_KEY;
-  if (!expected || !isBotKeyConfigured() || !provided) return false;
-  const a = Buffer.from(provided);
-  const b = Buffer.from(expected);
-  return a.length === b.length && timingSafeEqual(a, b);
-}
-
 /**
- * Organización única de la instancia (self-hosted, un negocio). Cacheada en
- * memoria: la instancia jamás cambia de organización en runtime.
+ * El tenant de una llamada ya autenticada por `requireBotKey`. Sin `req` (o
+ * sin autenticar) cae en la organización principal, como antes de 067.
  */
-let cachedOrgId: string | null = null;
-
-export async function resolveInstanceOrg(): Promise<string | null> {
-  if (cachedOrgId) return cachedOrgId;
-  const db = getDb();
-  const rows = await db
-    .select({ id: schema.organization.id })
-    .from(schema.organization)
-    .limit(1);
-  cachedOrgId = rows[0]?.id ?? null;
-  return cachedOrgId;
+export async function resolveInstanceOrg(req?: Request): Promise<string | null> {
+  const org = req ? orgPorRequest.get(req) : undefined;
+  if (org) return org;
+  return primaryOrgId();
 }
 
 /** Solo para tests. */
 export function resetInstanceOrgCache(): void {
-  cachedOrgId = null;
+  resetPrimaryOrgCache();
 }

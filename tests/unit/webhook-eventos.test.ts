@@ -8,11 +8,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
  * se pudo ni guardar se responde 503 para que la fuente reintente.
  */
 
-const { after, guardarEvento, resolverOrganizacion, procesarFuente, procesarEvento } =
+const { after, guardarEvento, resolverOrganizacion, suspendida, procesarFuente, procesarEvento } =
   vi.hoisted(() => ({
     after: vi.fn(),
     guardarEvento: vi.fn(),
     resolverOrganizacion: vi.fn(),
+    /** 067 — ¿El negocio resuelto está suspendido? */
+    suspendida: { valor: false },
     procesarFuente: vi.fn(),
     procesarEvento: vi.fn(),
   }));
@@ -25,6 +27,12 @@ vi.mock("@/server/webhooks/eventos", async (orig) => ({
 vi.mock("@/server/webhooks/organizacion", async (orig) => ({
   ...(await orig<typeof import("@/server/webhooks/organizacion")>()),
   resolverOrganizacion,
+  // 067 — La ruta pregunta por el destino: la organización y si está suspendida.
+  resolverDestino: async (fuente: string, payload: unknown) => {
+    const id = await resolverOrganizacion(fuente, payload);
+    if (id && suspendida.valor) return { organizationId: null, suspendida: true };
+    return { organizationId: id ?? null, suspendida: false };
+  },
 }));
 vi.mock("@/server/webhooks/procesar", () => ({ procesarFuente }));
 vi.mock("@/server/webhooks/worker", () => ({ procesarEvento }));
@@ -133,6 +141,20 @@ describe("recibirEvento: lo que hace la ruta tras validar", () => {
     const res = await recibirEvento("whatsapp", {}, "{}", "webhook");
     expect(res.status).toBe(503);
     expect(after).not.toHaveBeenCalled();
+  });
+
+  it("067 — negocio suspendido: 200 y nada más (ni se guarda ni se procesa)", async () => {
+    resolverOrganizacion.mockResolvedValue("org_a");
+    suspendida.valor = true;
+    try {
+      const res = await recibirEvento("whatsapp", { entry: [] }, "{}", "webhook");
+      expect(res.status).toBe(200);
+      expect(guardarEvento).not.toHaveBeenCalled();
+      expect(after).not.toHaveBeenCalled();
+      expect(procesarFuente).not.toHaveBeenCalled();
+    } finally {
+      suspendida.valor = false;
+    }
   });
 
   it("si resolver la organización falla (base caída), también 503", async () => {

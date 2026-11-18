@@ -1,3 +1,4 @@
+import { orgDeContexto } from "@/server/tenants/contexto";
 import { cookies } from "next/headers";
 import { eq } from "drizzle-orm";
 import { getDb, schema } from "@/lib/db";
@@ -29,6 +30,8 @@ function leerMetadata(metadata: string | null): Record<string, unknown> {
 /** La del negocio, o null si nunca se eligió (vale la de Vocero). */
 export async function aparienciaDelNegocio(organizationId?: string | null): Promise<Apariencia | null> {
   const db = getDb();
+  // 067 — Sin id: el negocio del contexto (ruta /t/{slug}, sesión o el principal).
+  organizationId ??= await orgDeContexto();
   const rows = organizationId
     ? await db
         .select({ metadata: schema.organization.metadata })

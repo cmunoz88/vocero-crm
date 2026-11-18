@@ -24,6 +24,10 @@ vi.mock("@/server/bot/auth", async (importOriginal) => ({
 import { POST } from "@/app/api/bot/llm/[...ruta]/route";
 import { resetRateLimit } from "@/lib/rate-limit";
 
+// 067 — Sin base: el cerebro de cualquier tenant sale del entorno, como antes.
+vi.mock("@/server/brains/por-org", () => import("../fixtures/por-org-entorno"));
+
+
 const PROVEEDOR = (source: "org" | "env" = "org"): AiResolution => ({
   ok: true,
   provider: { source, baseUrl: "https://proveedor.test/api", model: "m/uno", judgeModel: "m/uno", token: LLAVE_IA },
