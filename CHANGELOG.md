@@ -20,8 +20,10 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
   la variable, todo queda como antes. Migración `0027` aditiva (aplica sola
   al arrancar).
 
-- **Mi cuenta** (`/cuenta`): cualquiera con sesión cambia su contraseña
-  (pide la actual y cierra las otras sesiones). Enlace en el menú y en
+- **Mi cuenta** (`/cuenta`): cualquiera con sesión cambia su nombre, su
+  correo (pide la contraseña; un superusuario solo a otro correo de
+  `SUPERADMIN_EMAILS`) y su contraseña (pide la actual y cierra las otras
+  sesiones). Enlace en el menú y en
   `/admin`. Para un superusuario sin acceso, `SUPERADMIN_SET_PASSWORD` (+
   `SUPERADMIN_SET_PASSWORD_FOR`) crea o restablece su cuenta al arrancar; se
   quita después de entrar.

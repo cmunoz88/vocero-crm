@@ -100,8 +100,76 @@ if (fase === "antes") {
   console.log("== después: sin la variable, el reinicio no pisa nada ==");
   ok("el nuevo sigue con SU contraseña", await puedeEntrar("nuevo@rescate.test", NUEVA));
   ok("test123$ no volvió", !(await puedeEntrar("nuevo@rescate.test", "test123$")));
+} else if (fase === "datos") {
+  console.log("== datos: nombre y correo en /cuenta ==");
+  const su = sesion();
+  ok("el superusuario entra", (await su.entrar("nuevo@rescate.test", NUEVA)).res.ok);
+  // Nombre (Better Auth update-user).
+  let r = await su.api("/api/auth/update-user", { method: "POST", body: JSON.stringify({ name: "Maestra Nueva" }) });
+  ok("cambiar el nombre → 200", r.res.ok, r.json);
+  r = await su.api("/api/auth/get-session");
+  ok("la sesión ya trae el nombre nuevo", r.json?.user?.name === "Maestra Nueva", r.json?.user);
+  // Correo: protecciones.
+  const correo = (s, email, password) =>
+    s.api("/api/cuenta/email", { method: "POST", body: JSON.stringify({ email, password }) });
+  ok("sin sesión → 401", (await correo(sesion(), "x@x.test", "x")).status === 401);
+  r = await correo(su, "fuera@lista.test", NUEVA);
+  ok("superusuario a un correo fuera de SUPERADMIN_EMAILS → 409", r.status === 409 && r.json?.error?.code === "superadmin", r.json);
+  r = await correo(su, "super@principal.test", NUEVA);
+  ok("a un correo que ya usa otra cuenta → 409", r.status === 409 && r.json?.error?.code === "ocupado", r.json);
+  // Un dueño normal.
+  const slug = `datos-${Date.now().toString(36)}`;
+  r = await su.api("/api/admin/tenants", {
+    method: "POST",
+    body: JSON.stringify({ name: "Datos SA", slug, owner: { name: "Dueño", email: `dueno@${slug}.test`, password: "password-dueno-1" } }),
+  });
+  ok("alta de un negocio de prueba", r.status === 201, r.json);
+  const d = sesion();
+  ok("su dueño entra", (await d.entrar(`dueno@${slug}.test`, "password-dueno-1")).res.ok);
+  ok("correo inválido → 422", (await correo(d, "no-es-correo", "password-dueno-1")).status === 422);
+  ok("el mismo correo → 422", (await correo(d, `dueno@${slug}.test`, "password-dueno-1")).status === 422);
+  r = await correo(d, `nuevo-correo@${slug}.test`, "equivocada-123");
+  ok("contraseña equivocada → 403", r.status === 403, r.json);
+  r = await correo(d, `Nuevo-Correo@${slug}.TEST`, "password-dueno-1");
+  ok("cambio de correo → 200 (normalizado a minúsculas)", r.res.ok && r.json?.email === `nuevo-correo@${slug}.test`, r.json);
+  ok("entra con el correo nuevo", await puedeEntrar(`nuevo-correo@${slug}.test`, "password-dueno-1"));
+  ok("ya no con el viejo", !(await puedeEntrar(`dueno@${slug}.test`, "password-dueno-1")));
+  ok("su sesión abierta sigue sirviendo", (await d.api("/api/conversations")).status === 200);
+  r = await su.api("/api/admin/tenants");
+  const t = r.json?.tenants?.find((x) => x.slug === slug);
+  r = await su.api(`/api/admin/tenants/${t?.id}`);
+  ok("/admin ve el correo nuevo del dueño", r.json?.members?.[0]?.email === `nuevo-correo@${slug}.test`, r.json?.members);
+  // Limpieza: suspender y borrar el negocio de prueba.
+  await su.api(`/api/admin/tenants/${t?.id}`, { method: "PATCH", body: JSON.stringify({ status: "suspended" }) });
+  ok("limpieza", (await su.api(`/api/admin/tenants/${t?.id}`, { method: "DELETE", body: JSON.stringify({ confirm: slug }) })).res.ok);
+
+  // Navegador: la pantalla.
+  const { chromium } = await import("playwright");
+  const browser = await chromium.launch();
+  try {
+    const page = await (await browser.newContext({ baseURL: BASE })).newPage();
+    await page.goto("/login");
+    await page.fill("#email", "nuevo@rescate.test");
+    await page.fill("#password", NUEVA);
+    await page.click("button[type=submit]");
+    await page.waitForURL((u) => !u.pathname.startsWith("/login"), { timeout: 20000 });
+    await page.getByRole("link", { name: "Mi cuenta" }).first().click();
+    await page.waitForURL((u) => u.pathname === "/cuenta");
+    await page.fill("#cuenta-nombre", "Maestra desde UI");
+    await page.getByRole("button", { name: "Guardar nombre" }).click();
+    ok("UI: guardar nombre", await page.getByText("Nombre guardado ✓").waitFor({ timeout: 10000 }).then(() => true).catch(() => false));
+    await page.fill("#cuenta-correo", "fuera@lista.test");
+    await page.fill("#cuenta-correo-pw", NUEVA);
+    await page.getByRole("button", { name: "Cambiar correo" }).click();
+    ok("UI: el aviso de superusuario se ve", await page.getByText(/SUPERADMIN_EMAILS/).first().waitFor({ timeout: 10000 }).then(() => true).catch(() => false));
+    await page.screenshot({ path: ".tmp-e2e-cuenta.png", fullPage: true });
+  } catch (err) {
+    ok("UI sin errores", false, String(err).slice(0, 300));
+  } finally {
+    await browser.close();
+  }
 } else {
-  console.error("fase: antes | rescate | despues");
+  console.error("fase: antes | rescate | despues | datos");
   process.exit(2);
 }
 console.log(`${checks - failures}/${checks} checks OK`);
