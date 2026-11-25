@@ -16,7 +16,7 @@ const env = vi.hoisted(() => ({
   APP_BASE_URL: "https://crm.ejemplo.test",
   META_WEBHOOK_VERIFY_TOKEN: "verify-token-xyz",
   META_GRAPH_BASE_URL: "http://127.0.0.1:1",
-  META_GRAPH_API_VERSION: "v25.0",
+  META_GRAPH_API_VERSION: "v26.0",
   META_APP_ID: "1715957376325225" as string | undefined,
   META_EMBEDDED_CONFIG_ID: "998877" as string | undefined,
   META_APP_SECRET: "secreto-de-la-app" as string | undefined,
@@ -57,7 +57,7 @@ beforeAll(async () => {
     const url = new URL(req.url ?? "/", "http://x");
     canjes.push(url.searchParams);
     const ok =
-      url.pathname === "/v25.0/oauth/access_token" &&
+      url.pathname === "/v26.0/oauth/access_token" &&
       url.searchParams.get("client_secret") === "secreto-de-la-app" &&
       url.searchParams.get("code") !== "code-malo";
     res.writeHead(ok ? 200 : 400, { "content-type": "application/json" });
@@ -130,6 +130,8 @@ describe("el evento de sesión de Meta", () => {
     expect(leerEventoDeAlta(FB, ev("ERROR", { error_message: "falló" }))).toEqual({ kind: "error", message: "falló" });
     expect(leerEventoDeAlta(FB, ev("FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING", { waba_id: "1" }))).toEqual({
       kind: "coexistence",
+      wabaId: "1",
+      phoneNumberId: null,
     });
   });
 
@@ -146,11 +148,16 @@ describe("el evento de sesión de Meta", () => {
       config_id: "998877",
       response_type: "code",
       override_default_response_type: true,
-      extras: { setup: {}, sessionInfoVersion: "3", version: "v4" },
+      extras: {
+        setup: {},
+        featureType: "whatsapp_business_app_onboarding",
+        sessionInfoVersion: "3",
+        version: "v4",
+      },
     });
-    expect(opcionesDeInit("1715957376325225", "v25.0")).toMatchObject({
+    expect(opcionesDeInit("1715957376325225", "v26.0")).toMatchObject({
       appId: "1715957376325225",
-      version: "v25.0",
+      version: "v26.0",
       fedCM: false,
     });
   });
@@ -180,6 +187,7 @@ describe("el alta en el servidor", () => {
   it("canjea, verifica el número, lo registra con un PIN generado, guarda y registra el webhook", async () => {
     respond({ data: [numero("444"), numero("555")] }); // phone_numbers
     respond({ success: true }); // register
+    respond({ id: "4242" }); // me → quien autorizó
 
     const r = await completarAltaEmbebida(input);
 
@@ -201,6 +209,7 @@ describe("el alta en el servidor", () => {
       token: "EAAG-del-cliente",
       displayPhoneNumber: "+51 999 888 777",
       verifiedName: "AvisaPe",
+      metaUserId: "4242",
     });
     expect(mocks.webhook).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -224,10 +233,29 @@ describe("el alta en el servidor", () => {
 
     fetchMock.mockReset();
     respond({ data: [numero("555", { status: "CONNECTED" })] });
+    respond({ id: "4242" });
     const r2 = await completarAltaEmbebida({ ...input, code: "code-2" });
-    expect(fetchMock).toHaveBeenCalledTimes(1);
+    expect(fetchMock).toHaveBeenCalledTimes(2); // números + me, sin /register
     expect(r2).toMatchObject({ registered: false });
     expect(r2.generatedPin).toBeUndefined();
+  });
+
+  it("Coexistence (069): nunca llama a /register ni genera PIN, y lo marca", async () => {
+    respond({ data: [numero("555", { status: "PENDING" })] });
+    respond({ id: "4242" });
+    const r = await completarAltaEmbebida({ ...input, coexistence: true });
+    expect(fetchMock.mock.calls.some(([u]) => String(u).includes("/register"))).toBe(false);
+    expect(r).toMatchObject({ registered: false, coexistence: true });
+    expect(r.generatedPin).toBeUndefined();
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ phoneNumberId: "555", metaUserId: "4242" }));
+  });
+
+  it("si /me falla, la conexión se guarda igual sin metaUserId (069)", async () => {
+    respond({ data: [numero("555")] });
+    respond({ success: true });
+    respond({ error: { message: "x", code: 190 } }, 400);
+    await completarAltaEmbebida(input);
+    expect(mocks.save).toHaveBeenCalledWith(expect.objectContaining({ metaUserId: null }));
   });
 
   it("sin phone_number_id usa el único número; con varios falla sin guardar (CA-3)", async () => {
@@ -295,7 +323,7 @@ describe("la ruta /api/settings/whatsapp/embedded", () => {
       canManage: true,
       appId: "1715957376325225",
       configId: "998877",
-      graphVersion: "v25.0",
+      graphVersion: "v26.0",
     });
     expect(JSON.stringify(data)).not.toContain("secreto");
     mocks.session.mockResolvedValue({ organizationId: "org_1", userId: "usr_2", role: "member" });

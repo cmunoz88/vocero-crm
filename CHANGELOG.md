@@ -9,6 +9,17 @@ imagen `ghcr.io/kevinrivm/vocero-crm:X.Y.Z`.
 
 ### Nuevo
 
+- **Cumplimiento con Meta, Coexistence y Graph v26** (spec 069). Las páginas
+  públicas `/privacidad`, `/terminos` y `/eliminar-datos` (las firma
+  `LEGAL_NAME`, con `LEGAL_CONTACT_EMAIL`) y los callbacks que pide Meta:
+  `POST /api/meta/desautorizar` (las conexiones de quien quitó la app piden
+  reconectar) y `POST /api/meta/eliminar-datos` (borra sus credenciales y da un
+  código de confirmación consultable). Ambos validan el `signed_request` con
+  `META_APP_SECRET`. «Conectar con Meta» ahora admite la app WhatsApp Business
+  del teléfono (Coexistence): no registra el número ni pone PIN. La Graph API
+  pasa a `v26.0`. Migración `0032` aditiva (aplica sola al arrancar). URLs para
+  el panel de Meta: [docs/cumplimiento-meta.md](docs/cumplimiento-meta.md).
+
 - **Multi-tenant con superusuario** (spec 067). Con `SUPERADMIN_EMAILS`, quien
   esté en esa lista ve **Negocios** (`/admin`): crea negocios, cada uno con su
   web ID (`/t/{slug}`, su propio login con su marca) y la cuenta de su dueño;

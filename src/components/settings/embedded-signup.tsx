@@ -34,7 +34,7 @@ type Facebook = {
 type Pendiente = {
   pin: string | null;
   code?: string;
-  evento?: { wabaId: string; phoneNumberId: string | null };
+  evento?: { wabaId: string; phoneNumberId: string | null; coexistence?: boolean };
   enviando: boolean;
 };
 export type ResultadoEmbebido = {
@@ -97,6 +97,7 @@ export function EmbeddedSignup({
           wabaId: p.evento.wabaId,
           phoneNumberId: p.evento.phoneNumberId,
           pin: p.pin,
+          ...(p.evento.coexistence ? { coexistence: true } : {}),
         }),
         signal: AbortSignal.timeout(120_000),
       });
@@ -130,9 +131,14 @@ export function EmbeddedSignup({
         return fallar(`Meta reportó un error${e.message ? `: ${e.message}` : ""}. Puedes volver a intentarlo.`);
       }
       if (e.kind === "coexistence") {
-        return fallar(
-          "En Meta se eligió conectar la app de WhatsApp Business del teléfono (coexistencia), que esta versión no admite. No se guardó nada."
-        );
+        // 069 — Se conecta la app WhatsApp Business del teléfono: el número
+        // ya vive en la app, así que el servidor no lo registra ni pone PIN.
+        if (!e.wabaId) {
+          return fallar("Meta no dijo qué cuenta de WhatsApp se conectó. Puedes volver a intentarlo.");
+        }
+        activo.current.evento = { wabaId: e.wabaId, phoneNumberId: e.phoneNumberId, coexistence: true };
+        void enviar();
+        return;
       }
       activo.current.evento = { wabaId: e.wabaId, phoneNumberId: e.phoneNumberId };
       void enviar();

@@ -12,7 +12,7 @@ import type { InstagramCredentials } from "@/server/instagram/credentials";
 const ZERNIO_BASE = process.env.ZERNIO_BASE_URL ?? "https://zernio.com/api/v1";
 const IG_GRAPH_BASE =
   process.env.IG_GRAPH_BASE_URL ?? "https://graph.instagram.com";
-const IG_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION ?? "v25.0";
+const IG_GRAPH_VERSION = process.env.META_GRAPH_API_VERSION ?? "v26.0";
 
 /** Instagram corta el texto en 1000 BYTES (no caracteres): con acentos y
  * emojis el margen real es menor de lo que aparenta. */

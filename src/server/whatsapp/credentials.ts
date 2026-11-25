@@ -275,6 +275,8 @@ export async function saveCredentials(input: {
   token: string;
   displayPhoneNumber?: string | null;
   verifiedName?: string | null;
+  /** 069 — Quien autorizó en «Conectar con Meta»; `undefined` conserva el guardado. */
+  metaUserId?: string | null;
 }): Promise<void> {
   const db = getDb();
   const enc = encryptSecret(input.token);
@@ -291,6 +293,7 @@ export async function saveCredentials(input: {
     tokenIv: enc.iv,
     tokenTag: enc.tag,
     status: "connected" as const,
+    ...(input.metaUserId !== undefined ? { metaUserId: input.metaUserId } : {}),
   };
   await db.transaction(async (tx) => {
     // Si el número ya era uno secundario de este negocio, se vuelve el principal.

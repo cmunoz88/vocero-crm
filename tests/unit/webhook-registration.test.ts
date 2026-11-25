@@ -14,7 +14,7 @@ const env = vi.hoisted(() => ({
   APP_BASE_URL: "https://crm.ejemplo.test/",
   META_WEBHOOK_VERIFY_TOKEN: "verify-token-xyz",
   META_GRAPH_BASE_URL: "https://graph.facebook.com",
-  META_GRAPH_API_VERSION: "v25.0",
+  META_GRAPH_API_VERSION: "v26.0",
 }));
 vi.mock("@/lib/env", () => ({ getEnv: () => env }));
 
@@ -88,20 +88,20 @@ describe("registro automático del webhook en Meta", () => {
     });
 
     expect(call(0)).toMatchObject({
-      url: "https://graph.facebook.com/v25.0/111/subscribed_apps",
+      url: "https://graph.facebook.com/v26.0/111/subscribed_apps",
       method: "GET",
       auth: "Bearer EAAG-token",
     });
     // 1 · Suscripción sin cuerpo, como la documenta Meta.
     expect(call(1)).toMatchObject({
-      url: "https://graph.facebook.com/v25.0/111/subscribed_apps",
+      url: "https://graph.facebook.com/v26.0/111/subscribed_apps",
       method: "POST",
       body: undefined,
     });
     // 2 · Override del número, con el verify token que comprueba la ruta del
     // webhook en el handshake.
     expect(call(2)).toMatchObject({
-      url: "https://graph.facebook.com/v25.0/222",
+      url: "https://graph.facebook.com/v26.0/222",
       method: "POST",
       body: {
         webhook_configuration: {
@@ -112,7 +112,7 @@ describe("registro automático del webhook en Meta", () => {
     });
     // 3 · Confirmación.
     expect(call(3)).toMatchObject({
-      url: "https://graph.facebook.com/v25.0/222?fields=webhook_configuration",
+      url: "https://graph.facebook.com/v26.0/222?fields=webhook_configuration",
       method: "GET",
     });
     expect(fetchMock).toHaveBeenCalledTimes(4);
@@ -187,7 +187,7 @@ describe("registro automático del webhook en Meta", () => {
       respond({ success: true });
       await unregisterWebhookForNumber(quitar);
       expect(call(1)).toMatchObject({
-        url: "https://graph.facebook.com/v25.0/222",
+        url: "https://graph.facebook.com/v26.0/222",
         method: "POST",
         body: { webhook_configuration: { override_callback_uri: "" } },
       });

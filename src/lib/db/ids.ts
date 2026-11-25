@@ -47,6 +47,8 @@ const prefixes = {
   auditLog: "aud",
   oneTimeSecret: "ots",
   businessInvitation: "inv",
+  // 069 — cumplimiento con Meta
+  metaDataDeletion: "mdd",
 } as const;
 
 export type IdKind = keyof typeof prefixes;

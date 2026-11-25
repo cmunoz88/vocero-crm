@@ -5,8 +5,8 @@ import { z } from "zod";
  * facebook.com) y las opciones de `FB.login`. Lo lee el navegador; vive en
  * `lib/` porque lo importan la tarjeta y las pruebas.
  *
- * Puerto de la spec 104 del fork de un cliente, sin la coexistencia: un
- * evento de coexistencia se reconoce para poder decir que no se admite.
+ * Puerto de la spec 104 del fork de un cliente. 069 añade la coexistencia:
+ * el evento de la app WhatsApp Business se admite y cierra el alta sin `/register`.
  */
 
 const ORIGENES = new Set([
@@ -32,7 +32,7 @@ const eventoSchema = z.object({
 export type EventoDeAlta =
   | { kind: "cancel" }
   | { kind: "error"; message: string | null }
-  | { kind: "coexistence" }
+  | { kind: "coexistence"; wabaId: string | null; phoneNumberId: string | null }
   | { kind: "finish"; wabaId: string; phoneNumberId: string | null };
 
 export function leerEventoDeAlta(origin: string, raw: unknown): EventoDeAlta | null {
@@ -50,7 +50,9 @@ export function leerEventoDeAlta(origin: string, raw: unknown): EventoDeAlta | n
   const { event, data } = parsed.data;
   if (event === "CANCEL") return { kind: "cancel" };
   if (event === "ERROR") return { kind: "error", message: data?.error_message ?? null };
-  if (event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING") return { kind: "coexistence" };
+  if (event === "FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING") {
+    return { kind: "coexistence", wabaId: data?.waba_id ?? null, phoneNumberId: data?.phone_number_id ?? null };
+  }
   if ((event === "FINISH" || event === "FINISH_ONLY_WABA") && data?.waba_id) {
     return { kind: "finish", wabaId: data.waba_id, phoneNumberId: data.phone_number_id ?? null };
   }
@@ -67,7 +69,15 @@ export function opcionesDeLogin(configId: string) {
     config_id: configId,
     response_type: "code",
     override_default_response_type: true,
-    extras: { setup: {}, sessionInfoVersion: "3", version: "v4" },
+    // 069 — `featureType` SIEMPRE: abre la ventana en la variante que deja
+    // elegir entre número nuevo y la app WhatsApp Business (Coexistence). Sin
+    // él, quien usa la app choca con #2494064 / #2655115.
+    extras: {
+      setup: {},
+      featureType: "whatsapp_business_app_onboarding",
+      sessionInfoVersion: "3",
+      version: "v4",
+    },
   };
 }
 

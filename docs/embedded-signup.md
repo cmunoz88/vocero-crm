@@ -118,7 +118,10 @@ del número. Guárdalo; Vocero no lo almacena.
 | Popup bloqueado | Permite ventanas emergentes para el dominio de la instancia |
 
 La coexistencia (mantener el número en la app WhatsApp Business del teléfono)
-no está en esta versión; ver «Fuera de alcance» en la spec.
+se admite desde la spec 069: el popup manda `featureType` siempre y, si el
+cliente elige la app, el servidor no registra el número ni pone PIN. Qué campos
+de webhook suscribir y qué URLs pegar en el panel de Meta:
+[cumplimiento-meta.md](cumplimiento-meta.md).
 
 ---
 

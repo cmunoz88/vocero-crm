@@ -25,7 +25,13 @@ export const envSchema = z.object({
   // solo el alta manual. Se leen en server/whatsapp/embedded.ts.
   META_APP_ID: z.string().optional(),
   META_EMBEDDED_CONFIG_ID: z.string().optional(),
-  META_GRAPH_API_VERSION: z.string().default("v25.0"),
+  // 069: v26.0 es la vigente (oct-2026). Una sola variable para todo Graph.
+  META_GRAPH_API_VERSION: z.string().default("v26.0"),
+  // 069: quién firma las páginas públicas /privacidad, /terminos y
+  // /eliminar-datos que pide Meta. Sin ellas se usa «Vocero» y no se muestra
+  // correo de contacto.
+  LEGAL_NAME: z.string().optional(),
+  LEGAL_CONTACT_EMAIL: z.string().optional(),
   META_GRAPH_BASE_URL: z.string().url().default("https://graph.facebook.com"),
   OPENROUTER_API_TOKEN: z.string().optional(),
   OPENROUTER_BASE_URL: z.string().url().default("https://openrouter.ai/api"),

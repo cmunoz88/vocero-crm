@@ -160,7 +160,7 @@ function esSoloDigitos(valor: string): boolean {
   return /^[0-9]+$/.test(valor);
 }
 
-/** Quita el segmento de versión (v25.0/...) si viene en la ruta. */
+/** Quita el segmento de versión (v26.0/...) si viene en la ruta. */
 function normalizePath(path: string[]): string[] {
   return path[0] && /^v\d+/.test(path[0]) ? path.slice(1) : path;
 }
@@ -205,6 +205,13 @@ export async function GET(req: Request, ctx: Params) {
       access_token: `EAAG-embedded-${code}`,
       token_type: "bearer",
     });
+  }
+
+  // 069 — GET me?fields=id → quien autorizó en «Conectar con Meta». El id sale
+  // del code: `…-uid<dígitos>` lo fija; sin eso, uno por defecto.
+  if (path.length === 1 && path[0] === "me") {
+    const uid = /-uid(\d{1,20})$/.exec(token)?.[1];
+    return Response.json({ id: uid ?? "7000000001" });
   }
 
   // 066 — GET {wabaId}/phone_numbers → los números sembrados de esa WABA.

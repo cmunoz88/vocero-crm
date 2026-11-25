@@ -48,6 +48,8 @@ const inputSchema = z.object({
   phoneNumberId: id.nullable(),
   /** El PIN que ya tenía el número; `null` = que el servidor genere uno. */
   pin: z.string().regex(/^\d{6}$/).nullable(),
+  /** 069 — El evento fue `FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`. */
+  coexistence: z.boolean().optional(),
 });
 
 export const POST = withAuth(async (session, req: Request) => {

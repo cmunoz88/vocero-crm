@@ -196,6 +196,20 @@ export async function resolverNumero(
   return elegido;
 }
 
+/**
+ * 069 — El id (de la app) de quien autorizó: es lo único que Meta manda en
+ * los callbacks de desautorización y de eliminación de datos. Best-effort:
+ * sin él la conexión funciona igual, solo que esos avisos no la encuentran.
+ */
+async function idDeQuienAutorizo(token: string): Promise<string | null> {
+  try {
+    const me = await graphRequest<{ id?: string }>("me?fields=id", { token });
+    return me.id && /^\d{1,32}$/.test(me.id) ? me.id : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Seis dígitos para la verificación en dos pasos del número. */
 export function generarPin(): string {
   return String(randomInt(0, 1_000_000)).padStart(6, "0");
@@ -240,6 +254,8 @@ export type ResultadoAlta = {
   wabaId: string;
   phoneNumberId: string;
   messagingAccountId: string | null;
+  /** 069 — true si el número quedó conectado por Coexistence. */
+  coexistence: boolean;
   /** true si esta alta llamó a `/register` (el número no estaba conectado). */
   registered: boolean;
   /**
@@ -257,11 +273,18 @@ export async function completarAltaEmbebida(input: {
   phoneNumberId: string | null;
   /** El PIN que ya tenía el número; sin él, se genera uno. */
   pin: string | null;
+  /**
+   * 069 — El cliente conectó la app WhatsApp Business de su teléfono
+   * (`FINISH_WHATSAPP_BUSINESS_APP_ONBOARDING`). El número ya vive en la
+   * app: NUNCA se llama a `/register` ni se genera PIN.
+   */
+  coexistence?: boolean;
 }): Promise<ResultadoAlta> {
   const token = await canjearCodigo(input.code);
   const numero = await resolverNumero(token, input.wabaId, input.phoneNumberId);
   const pin = input.pin ?? generarPin();
-  const registered = await registrarNumero(token, numero, pin);
+  const registered = input.coexistence ? false : await registrarNumero(token, numero, pin);
+  const metaUserId = await idDeQuienAutorizo(token);
 
   // 065 — Best-effort: sin ella, el dueño la escribe en el formulario manual.
   const messagingAccountId = await descubrirCuentaDeMensajes(input.wabaId, token);
@@ -274,6 +297,7 @@ export async function completarAltaEmbebida(input: {
     token,
     displayPhoneNumber: numero.display_phone_number ?? null,
     verifiedName: numero.verified_name ?? null,
+    metaUserId,
   });
 
   const webhook = await registerWebhookForNumber({
@@ -291,6 +315,7 @@ export async function completarAltaEmbebida(input: {
     phoneNumberId: numero.id,
     messagingAccountId,
     registered,
+    coexistence: Boolean(input.coexistence),
     ...(registered && !input.pin ? { generatedPin: pin } : {}),
     webhook,
   };

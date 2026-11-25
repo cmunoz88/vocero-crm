@@ -17,7 +17,7 @@ const env = vi.hoisted(() => ({
   APP_BASE_URL: "https://crm.ejemplo.test",
   META_WEBHOOK_VERIFY_TOKEN: "verify-token-xyz",
   META_GRAPH_BASE_URL: "https://graph.facebook.com",
-  META_GRAPH_API_VERSION: "v25.0",
+  META_GRAPH_API_VERSION: "v26.0",
 }));
 vi.mock("@/lib/env", () => ({ getEnv: () => env }));
 
@@ -92,7 +92,7 @@ import { createTemplate, syncTemplates, TemplateError } from "@/server/whatsapp/
 
 const URL_PROPIA = "https://crm.ejemplo.test/api/webhooks/wa/verify-token-xyz";
 const RUTA_PROPIA = "/api/webhooks/wa/verify-token-xyz";
-const G = "https://graph.facebook.com/v25.0";
+const G = "https://graph.facebook.com/v26.0";
 
 const fetchMock = vi.fn();
 const respond = (data: unknown, status = 200) =>

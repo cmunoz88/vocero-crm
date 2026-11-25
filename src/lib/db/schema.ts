@@ -556,10 +556,17 @@ export const metaCredentials = pgTable(
     agentProfileId: text("agent_profile_id"),
     /** 068 — El número principal: plantillas, CAPI y lo que no tiene número propio. */
     isPrimary: boolean("is_primary").notNull().default(false),
+    /**
+     * 069 — El id (de la app) de quien autorizó en «Conectar con Meta». Es lo
+     * único que Meta manda en los callbacks de desautorización y de
+     * eliminación de datos (`signed_request.user_id`). Nulo = alta manual.
+     */
+    metaUserId: text("meta_user_id"),
     createdAt: timestamp("created_at").notNull().defaultNow(),
     updatedAt: timestamp("updated_at").notNull().defaultNow(),
   },
   (t) => [
+    index("meta_credentials_meta_user_idx").on(t.metaUserId),
     // 068 — Varios números por negocio; uno solo es el principal.
     uniqueIndex("meta_credentials_org_primary_uq")
       .on(t.organizationId)
@@ -1498,6 +1505,25 @@ export const auditLog = pgTable(
     createdAt: timestamp("created_at").notNull().defaultNow(),
   },
   (t) => [index("audit_log_created_idx").on(t.createdAt), index("audit_log_org_idx").on(t.organizationId)]
+);
+
+/**
+ * 069 — Solicitudes de eliminación de datos de Meta (callback con
+ * `signed_request`). Sin organization_id a propósito: es de la plataforma.
+ * Guarda el código de confirmación que Meta enseña al usuario y que la página
+ * pública `/eliminar-datos?codigo=…` consulta. Nunca guarda secretos.
+ */
+export const metaDataDeletion = pgTable(
+  "meta_data_deletion",
+  {
+    id: text("id").primaryKey(),
+    confirmationCode: text("confirmation_code").notNull().unique(),
+    metaUserId: text("meta_user_id").notNull(),
+    status: text("status", { enum: ["completada", "sin_datos"] }).notNull(),
+    numbersRemoved: integer("numbers_removed").notNull().default(0),
+    createdAt: timestamp("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("meta_data_deletion_user_idx").on(t.metaUserId)]
 );
 
 /**
