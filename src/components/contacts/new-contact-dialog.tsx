@@ -61,7 +61,7 @@ export function NewContactDialog({
       headers: { "content-type": "application/json" },
       body: JSON.stringify({
         name: name.trim(),
-        phone: phone.trim(),
+        phone: phone.replace(/\D/g, ""),
         source,
         notes: notes.trim() || undefined,
         stageId: stageId || undefined,
